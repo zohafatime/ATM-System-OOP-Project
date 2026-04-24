@@ -88,7 +88,7 @@ public:
 class ATM {
 private:
     User* currentUser;//aggregation
-    Account* accounts[100];//aggregation
+    Account** accounts;//aggregation
     int accountCount;
     ofstream logFile;
 public:
