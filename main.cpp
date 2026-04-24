@@ -143,7 +143,7 @@ private:
     User* currentUser;//aggregation
     Account** accounts;//aggregation
     int accountCount;
-    double cashAvailable;
+    float cashAvailable;
     ofstream logFile;
 
 public:
