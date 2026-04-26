@@ -2,7 +2,8 @@
 #define WITHDRAW_H
 #include"Transaction.h"
 #include"Account.h"
-#include <string>
+#include <cstring>
+using namespace std;
 class Withdraw :public Transaction
 {
 private:

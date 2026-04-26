@@ -2,11 +2,11 @@
 #define ATM_H
 
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <fstream>
 #include "User.h"
 #include "Account.h"
-
+#include "Transaction.h"  
 using namespace std;
 
 class ATM {
@@ -31,6 +31,7 @@ public:
     void logTransaction(Account *source,Transaction *t);
     void refillCash(double amount);
     double getCashAvailable();
+    friend class Admin;//to access private data members
 };
 
 #endif

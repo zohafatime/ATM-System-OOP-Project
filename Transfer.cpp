@@ -1,13 +1,13 @@
-#include<Transfer.h>
-#include<iostream>
+#include "Transfer.h"
+#include <iostream>
 using namespace std;
-Transfer::Transfer(double amount, string toAccNo, Account* target) : Transaction("Transfer", amount)
+Transfer::Transfer(double amount, string toAccNo, Account *target) : Transaction("Transfer", amount)
 {
     this->toAccountNumber = toAccNo;
     this->targetAccount = target;
 }
 
-void Transfer::execute(Account* acc) 
+void Transfer::execute(Account *acc)
 {
     if (this->targetAccount == nullptr)
     {
@@ -26,7 +26,8 @@ void Transfer::execute(Account* acc)
     }
 }
 
-void Transfer::printReceipt() {
+void Transfer::printReceipt()
+{
     cout << "------------------------------------------------------------" << endl;
     cout << "                          TRANSFER RECEIPT                  " << endl;
     cout << "Type:      " << this->type << endl;

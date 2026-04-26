@@ -2,19 +2,20 @@
 #define REGISTEREDUSER_H
 
 #include "User.h"
-#include <string>
-#include<iostream>
+#include "Account.h"
+#include <cstring>
+#include <iostream>
 using namespace std;
-class Account; 
 
-class RegisteredUser : public User {
+class RegisteredUser : public User
+{
 private:
     int failedAttempts;
     bool isLocked;
-    Account* account; 
+    Account *account;
 
 public:
-    RegisteredUser(string n, string acc, string p, Account* a);
+    RegisteredUser(string n, string acc, string p, Account *a);
 
     bool verifyPin(string input) override;
     void showMenu() override;
@@ -22,9 +23,9 @@ public:
 
     void lockAccount();
     void changePin(string oldPin, string newPin);
-    Account* getAccount();
+    Account *getAccount();
     bool getIsLocked();
-    
+
     ~RegisteredUser();
 };
 
