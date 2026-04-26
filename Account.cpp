@@ -3,10 +3,12 @@
 #include <iostream>      
 #include <fstream>
 
-    Account::Account(string accNo, double initialBalance){
+    Account::Account(string accNo,string holderName, double initialBalance,User *u){
         accountNumber=accNo;
+        this->holdername=holderName;
         balance=initialBalance;
         transactionCount=0;
+        user=u;
     }
     Account::~Account(){
         delete [] transactions;
@@ -48,6 +50,19 @@
     double Account::getBalance(){
          return balance;
     }
+    string Account::getAccountNumber(){
+        return accountNumber;
+    }
+    string Account::getHolderName(){
+        return holdername;
+    }
+    bool Account::getIsActive() {
+    return status;
+}
+
+void Account::setIsActive(bool status) {
+    this->status = status;
+}
     void Account::printMiniStatement(){
         for(int i=0;i<transactionCount;i++){
             if(*(transactions+i)!=nullptr){
@@ -56,7 +71,15 @@
     }
     }
     void Account::addTransaction(Transaction* t){
-    *(transactions + transactionCount) = t;
+    Transaction** temp = new Transaction*[transactionCount + 1];
+
+    for (int i = 0; i < transactionCount; i++) {
+        *(temp + i) = *(transactions + i);
+    }
+
+    *(temp + transactionCount) = t;
+    delete[] transactions;
+    transactions = temp;
     transactionCount++;
     }
  void Account::saveToFile() {
@@ -65,7 +88,11 @@
     
     string id;
     if (infile.is_open()) {
-        while (infile >> id) {
+        while (!infile.eof()) {
+            infile>>id;
+            if(!infile){
+                break;
+            }
             if (id != accountNumber) {
                 
                 float t_bal;
@@ -106,6 +133,12 @@
         if(!infile){
             return;
         }
+        for (int i = 0; i < transactionCount; i++) {
+        delete transactions[i];
+    }
+    delete[] transactions;
+    transactions = nullptr;
+    transactionCount = 0;
         while(!infile.eof()){
             string id;
             infile>>id;
@@ -117,7 +150,6 @@
                 int tempcount;
                 infile>>balance;
                 infile>>tempcount;
-                transactionCount=0;
                 for (int i = 0; i < tempcount; i++) {
                 float amt;
                 infile>>amt;
@@ -136,4 +168,7 @@
         }
     }
     infile.close();
+    }
+    void Account::showBalance(){
+        cout<<"Current balance is "<<balance<<endl;
     }

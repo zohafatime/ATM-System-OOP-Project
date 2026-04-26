@@ -65,7 +65,8 @@ private:
     double balance;
     Transaction** transactions;  // array of pointers meaning aggregation
     int transactionCount;
-
+    User *user;
+    bool status;
 public:
     Account(string accNo, string holderName, double initialBalance);
     ~Account();
@@ -140,10 +141,10 @@ public:
 class ATM
 {
 private:
-    User* currentUser;//aggregation
+    Account* currentAccount;//aggregation
     Account** accounts;//aggregation
-    int accountCount;
-    float cashAvailable;
+    int count;
+    double cashAvailable;
     ofstream logFile;
 
 public:
@@ -155,7 +156,7 @@ public:
     void processTransaction(int choice);
     void loadAccounts();
     void saveAccounts();
-    void logTransaction(Transaction *t);
+    void logTransaction(Account *source,Transaction *t);
     void refillCash(double amount); // called by Admin
     double getCashAvailable();
 };

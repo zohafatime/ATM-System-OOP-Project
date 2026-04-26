@@ -11,9 +11,9 @@ using namespace std;
 
 class ATM {
 private:
-    User *currentUser;
-    Account *accounts[100];
-    int accountCount;
+    Account *currentAccount;
+    Account **accounts;
+    int count;
     double cashAvailable;
     ofstream logFile;
 
@@ -28,7 +28,7 @@ public:
 
     void loadAccounts();
     void saveAccounts();
-    void logTransaction(Transaction *t);
+    void logTransaction(Account *source,Transaction *t);
     void refillCash(double amount);
     double getCashAvailable();
 };
