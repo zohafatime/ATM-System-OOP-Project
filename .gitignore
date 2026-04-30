@@ -4,3 +4,8 @@
 *.obj
 *.ilk
 *.pdb
+main
+atm_system
+*.o
+*.out
+.DS_Store
