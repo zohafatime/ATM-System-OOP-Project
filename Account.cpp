@@ -9,6 +9,10 @@ Account::Account(string accNo, string holderName, double initialBalance)
     this->holdername = holderName;
     balance = initialBalance;
     transactionCount = 0;
+    failedAttempts = 0; 
+    isLocked = false;   
+    status = true;     
+    transactions = nullptr;
 }
 Account::~Account()
 {
@@ -119,9 +123,11 @@ void Account::saveToFile()
             {
                 string t_pin;
                 float t_bal;
+                bool t_lock;
                 int count2;
-                infile >>t_pin>>t_bal >> count2;
-                temp_f << id << " " <<t_pin<<" "<<t_bal << " " << count2 << " ";
+                infile >>t_pin>>t_bal >>t_lock>>count2;
+
+                temp_f << id << " " <<t_pin<<" "<<t_bal << " " <<t_lock<<" "<< count2 << " ";
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -134,8 +140,9 @@ void Account::saveToFile()
             {   
                 string t_pin;
                 float t_bal;
+                bool t_lock;
                 int count2;
-                infile >>t_pin>>t_bal >> count2;
+                infile >>t_pin>>t_bal >>t_lock>>count2;
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -146,7 +153,7 @@ void Account::saveToFile()
         infile.close();
     }
 
-    temp_f << accountNumber << " " <<pin<<" "<< balance << " " << transactionCount << " ";
+   temp_f << accountNumber << " " << pin << " " << balance << " " << isLocked << " " << transactionCount << " ";
     for (int i = 0; i < transactionCount; i++)
     {
         temp_f << (*(transactions + i))->getAmount() << " ";
@@ -185,7 +192,9 @@ void Account::loadFromFile()
             int tempcount;
             infile>>t_pin;
             infile >> balance;
+            infile>>isLocked;
             infile >> tempcount;
+            status = !(isLocked);
             for (int i = 0; i < tempcount; i++)
             {
                 float amt;
@@ -197,8 +206,9 @@ void Account::loadFromFile()
         else
         {
             float t_bal;
+            bool t_lock;
             int count2;
-            infile >>t_pin>> t_bal >> count2;
+            infile >>t_pin>> t_bal >>t_lock>>count2;
             for (int i = 0; i < count2; i++)
             {
                 float trashAmt;
@@ -218,5 +228,29 @@ void Account::setPin(string newPin)
 }
 bool Account::verifyPin(string input)
 {
-    return pin == input;
+    if (isLocked)
+    {
+        cout << "Access denied as account is currently locked" << endl;
+        return false;
+    }
+
+    if (pin == input)
+    {
+        failedAttempts = 0;
+        return true;
+    }
+    else
+    {
+        failedAttempts++;
+        cout << "Incorrect PIN. Attempts remaining are " << (3 - failedAttempts) << endl;
+
+        if (failedAttempts >= 3)
+        {
+            isLocked = true; 
+            status = false;  
+            cout << "Account has been locked due to 3 failed attempts" << endl;
+            saveToFile();   
+        }
+        return false;
+    }
 }
