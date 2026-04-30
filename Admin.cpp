@@ -25,6 +25,7 @@ void Admin::showMenu()
     cout << "3. Remove Account" << endl;
     cout << "4. View All Transactions" << endl;
     cout << "5. Reset User PIN" << endl;
+    cout << "6. Add New Admin" << endl;
     cout << "0. Exit" << endl;
 }
 string Admin::getRole()

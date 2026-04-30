@@ -6,14 +6,19 @@
 #include <fstream>
 #include "User.h"
 #include "Account.h"
-#include "Transaction.h"  
+#include "Transaction.h"
 using namespace std;
 
-class ATM {
+class Admin; 
+
+class ATM
+{
 private:
     Account *currentAccount;
     Account **accounts;
     int count;
+    Admin **admins;      
+    int adminCount;
     double cashAvailable;
     ofstream logFile;
 
@@ -22,16 +27,20 @@ public:
     ~ATM();
 
     void run();
+    void runUserMenu();   
+    void runAdminMenu();  
+    void loadAdmins();    
     bool authenticate(string accNo, string pin);
     void showMenu();
     void processTransaction(int choice);
 
     void loadAccounts();
     void saveAccounts();
-    void logTransaction(Account *source,Transaction *t);
+    void logTransaction(Account *source, Transaction *t);
     void refillCash(double amount);
     double getCashAvailable();
-    friend class Admin;//to access private data members
+    void checkFirstRun();
+    friend class Admin;
 };
 
 #endif
