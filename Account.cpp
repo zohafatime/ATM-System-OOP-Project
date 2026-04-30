@@ -117,11 +117,11 @@ void Account::saveToFile()
             }
             if (id != accountNumber)
             {
-
+                string t_pin;
                 float t_bal;
                 int count2;
-                infile >> t_bal >> count2;
-                temp_f << id << " " << t_bal << " " << count2 << " ";
+                infile >>t_pin>>t_bal >> count2;
+                temp_f << id << " " <<t_pin<<" "<<t_bal << " " << count2 << " ";
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -131,10 +131,11 @@ void Account::saveToFile()
                 temp_f << endl;
             }
             else
-            {
+            {   
+                string t_pin;
                 float t_bal;
                 int count2;
-                infile >> t_bal >> count2;
+                infile >>t_pin>>t_bal >> count2;
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -145,7 +146,7 @@ void Account::saveToFile()
         infile.close();
     }
 
-    temp_f << accountNumber << " " << balance << " " << transactionCount << " ";
+    temp_f << accountNumber << " " <<pin<<" "<< balance << " " << transactionCount << " ";
     for (int i = 0; i < transactionCount; i++)
     {
         temp_f << (*(transactions + i))->getAmount() << " ";
@@ -172,6 +173,7 @@ void Account::loadFromFile()
     while (!infile.eof())
     {
         string id;
+        string t_pin;
         infile >> id;
 
         if (id == "")
@@ -181,6 +183,7 @@ void Account::loadFromFile()
         if (id == accountNumber)
         {
             int tempcount;
+            infile>>t_pin;
             infile >> balance;
             infile >> tempcount;
             for (int i = 0; i < tempcount; i++)
@@ -195,7 +198,7 @@ void Account::loadFromFile()
         {
             float t_bal;
             int count2;
-            infile >> t_bal >> count2;
+            infile >>t_pin>> t_bal >> count2;
             for (int i = 0; i < count2; i++)
             {
                 float trashAmt;
