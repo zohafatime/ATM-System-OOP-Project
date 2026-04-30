@@ -4,33 +4,6 @@ RegisteredUser::RegisteredUser(string n, string acc, string p, Account *a)
     : User(n, acc, p)
 {
     account = a;
-    failedAttempts = 0;
-    isLocked = false;
-}
-bool RegisteredUser::verifyPin(string input)
-{
-    if (isLocked)
-    {
-        cout << "Access denied as account is currently locked" << endl;
-        return false;
-    }
-
-    if (pin == input)
-    {
-        failedAttempts = 0;
-        return true;
-    }
-    else
-    {
-        failedAttempts++;
-        cout << "Incorrect PIN. Attempts remaining are " << (3 - failedAttempts) << endl;
-
-        if (failedAttempts >= 3)
-        {
-            lockAccount();
-        }
-        return false;
-    }
 }
 void RegisteredUser::showMenu()
 {
@@ -54,12 +27,19 @@ Account *RegisteredUser::getAccount()
 }
 bool RegisteredUser::getIsLocked()
 {
-    return isLocked;
-}
-void RegisteredUser::lockAccount()
-{
-    isLocked = true;
-    cout << "Account locked due to too many failed attempts" << endl;
+    if (account != nullptr)
+    {
+        bool ch = account->getIsActive();
+        if (ch == false)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return false;
 }
 void RegisteredUser::changePin(string oldPin, string newPin)
 {
@@ -70,11 +50,11 @@ void RegisteredUser::changePin(string oldPin, string newPin)
     else
     {
         pin = newPin;
-        cout << "PIN changed successfully" << endl;
         if (account != nullptr)
-        {
+        {   account->setPin(newPin);
             account->saveToFile();
         }
+         cout << "PIN changed successfully" << endl;
     }
 }
 RegisteredUser::~RegisteredUser() {}

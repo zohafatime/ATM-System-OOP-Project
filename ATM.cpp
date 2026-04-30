@@ -25,37 +25,140 @@ void ATM::run()
     loadAccounts();
     while (true)
     {
-        string acc;
-        cout << "Welcome to ATM" << endl
-             << "Enter account number" << endl;
-        cin >> acc;
-        string pin;
-        cout << "Enter Pin" << endl;
-        cin >> pin;
-        bool ch = authenticate(acc, pin);
-        if (ch == 0)
+        cout << "     WELCOME TO ATM BANKING SYSTEM     " << endl<<"Command List"<<endl<< "1 to Sign In (Existing User)" <<endl<< "2 to Sign Up for New User" << endl<< "3 to Exit" << endl << "Enter your choice";
+        int choice;
+        cin >> choice;
+        if (choice == 1)
         {
-            cout << "Invalid Credentials" << endl;
-            continue;
-        }
-        while (ch == 1)
-        {
-            showMenu();
-            int choice;
-            cout << "Enter choice(-1 to logout and 1 for transaction)" << endl;
-            cin >> choice;
-            if (choice == -1)
+            string acc, pin;
+            cout << "ACCOUNT LOGIN" << endl<< "Enter account number"<<endl;
+            cin >> acc;
+            cout << "Enter PIN"<<endl;
+            cin >> pin;
+            bool ch = authenticate(acc, pin);
+            if (ch == 0)
             {
-                ch = 0;
-                currentAccount = nullptr;
+                cout << "Invalid Credentials please enter again" << endl;
+                continue;
             }
-            else
+            else{
+            cout << "Login Successful" << endl<< "Welcome " << currentAccount->getHolderName()<< endl;
+            }
+            while (ch == 1)
             {
-                processTransaction(choice);
+                showMenu();
+                int choice2;
+                cout << "Enter choice"<<endl;
+                cin >> choice2;
+                
+                if (choice2 == -1)
+                {
+                    ch = 0;
+                    currentAccount = nullptr;
+                    cout << "Logged out successfully" << endl;
+                }
+                else
+                {
+                    processTransaction(choice2);
+                }
+            }
+        }
+        else if (choice == 2)
+        {
+            string accNo, holderName, newPin, Pin2;
+            double initial;
+            
+            cout << "NEW ACCOUNT REGISTRATION" << endl<< "Enter Account Number "<<endl;
+            cin >> accNo;
+            bool check = false;
+            for (int i = 0; i < count; i++)
+            {
+                if ((*(accounts + i))->getAccountNumber() == accNo)
+                {
+                    check = true;
+                    break;
+                }
+            }
+            
+            if (check==1)
+            {
+                cout << "Account number already exists" << endl;
+                continue;
+            }
+            else{
+            cout << "Enter Account Holder Name "<<endl;
+            cin.ignore();     //to prevent the buffer issue
+            getline(cin, holderName);
+            while (true)
+            {
+                cout << "Enter 4-digit PIN"<<endl;
+                cin >> newPin;
+                int len = 0;
+                bool test=true;
+                while (newPin[len] != '\0') { 
+                    if (newPin[len] < '0' || newPin[len] > '9') {
+            test = false;
+        }
+                    len++; }
+
+                if (len == 4&&test==1) 
+                {
+                    break;
+                }
+                else{
+                cout << "PIN must be exactly 4 digits" << endl<<"Please enter again"<<endl;
+                }
+            }
+            while(true){
+            cout << "Confirm PIN "<<endl;
+            cin >> Pin2;
+            if (newPin != Pin2)
+            {
+                cout << "PINs do not match Please enter again" << endl;
+            }
+            else{
+                break;
+            }
+        }
+        while(true){
+            cout << "Enter Initial Deposit"<<endl;
+            cin >> initial;
+            if (initial < 0)
+            {
+                cout << "Invalid amount enter again" << endl;
+            }
+            else{
+                break;
             }
         }
     }
-}
+            Account **temp = new Account *[count + 1];
+            for (int i = 0; i < count; i++)
+            {
+                *(temp + i) = *(accounts + i);
+            }
+            
+            *(temp + count) = new Account(accNo, holderName, initial);
+            (*(temp + count))->setPin(newPin);
+            (*(temp + count))->saveToFile();
+            
+            delete[] accounts;
+            accounts = temp;
+            count++;
+            
+            cout << "New Account created successfully" << endl<< "Account Number = " << accNo << endl<< " and Holder name is " << holderName << endl<< " with Initial Balance = " << initial << endl;
+        }
+        else if (choice == 3)
+        {
+            cout << "Thank you for using our ATM" << endl;
+            break;
+        }
+        else
+        {
+            cout << "Invalid choice Please enter again" << endl;
+        }
+    }
+    }
 bool ATM::authenticate(string accNo, string pin)
 {
     currentAccount = nullptr;
@@ -141,6 +244,44 @@ void ATM::processTransaction(int choice)
         cout << "Printing mini statement" << endl;
         currentAccount->printMiniStatement();
     }
+    else if(choice==6){
+        string newPin;
+        string Pin2;
+        while (true)
+            {
+                cout << "Enter 4-digit PIN"<<endl;
+                cin >> newPin;
+                int len = 0;
+                bool test=true;
+                while (newPin[len] != '\0') { 
+                    if (newPin[len] < '0' || newPin[len] > '9') {
+                test = false;
+            }
+                    len++; }
+
+                if (len == 4&&test==1) 
+                {
+                    break;
+                }
+                else{
+                cout << "PIN must be exactly 4 digits" << endl<<"Please enter again"<<endl;
+                }
+            }
+            while(true){
+            cout << "Confirm PIN "<<endl;
+            cin >> Pin2;
+            if (newPin != Pin2)
+            {
+                cout << "PINs do not match Please enter again" << endl;
+            }
+            else{
+                break;
+            }
+        }
+         currentAccount->setPin(newPin);
+         currentAccount->saveToFile();
+         cout<<"PIN changed successfully"<<endl;
+    }
     else
     {
         cout << "Invalid choice" << endl;
@@ -171,6 +312,7 @@ void ATM::loadAccounts()
     while (!infile.eof())
     {
         string id;
+        string t_pin;
         float bal;
         int t_count;
 
@@ -180,7 +322,7 @@ void ATM::loadAccounts()
             break;
         }
 
-        infile >> bal >> t_count;
+        infile >>t_pin>> bal >> t_count;
 
         Account **temp = new Account *[count + 1];
 
@@ -188,8 +330,9 @@ void ATM::loadAccounts()
         {
             *(temp + i) = *(accounts + i);
         }
-
-        *(temp + count) = new Account(id, "User", bal);
+    Account *new_acc= new Account(id, "User", bal);
+    new_acc->setPin(t_pin);
+    *(temp+count)=new_acc;
 
         for (int j = 0; j < t_count; j++)
         {
@@ -228,5 +371,6 @@ void ATM::showMenu() {
     cout << "3. Withdraw" << endl;
     cout << "4. Transfer" << endl;
     cout << "5. Mini Statement" << endl;
+    cout<<  "6. Change Pin"<<endl;
     cout << "-1. Logout" << endl;
 }

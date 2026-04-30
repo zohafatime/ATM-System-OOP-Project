@@ -12,6 +12,8 @@ private:
     string accountNumber;
     string holdername;
     double balance;
+    int failedAttempts;
+    bool isLocked;
     Transaction **transactions;
     User *user;
     int transactionCount;
