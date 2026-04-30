@@ -94,10 +94,14 @@ void ATM::run()
                 cout << "Enter 4-digit PIN"<<endl;
                 cin >> newPin;
                 int len = 0;
+                bool test=true;
                 while (newPin[len] != '\0') { 
+                    if (newPin[len] < '0' || newPin[len] > '9') {
+            test = false;
+        }
                     len++; }
 
-                if (len == 4) 
+                if (len == 4&&test==1) 
                 {
                     break;
                 }
@@ -240,6 +244,44 @@ void ATM::processTransaction(int choice)
         cout << "Printing mini statement" << endl;
         currentAccount->printMiniStatement();
     }
+    else if(choice==6){
+        string newPin;
+        string Pin2;
+        while (true)
+            {
+                cout << "Enter 4-digit PIN"<<endl;
+                cin >> newPin;
+                int len = 0;
+                bool test=true;
+                while (newPin[len] != '\0') { 
+                    if (newPin[len] < '0' || newPin[len] > '9') {
+                test = false;
+            }
+                    len++; }
+
+                if (len == 4&&test==1) 
+                {
+                    break;
+                }
+                else{
+                cout << "PIN must be exactly 4 digits" << endl<<"Please enter again"<<endl;
+                }
+            }
+            while(true){
+            cout << "Confirm PIN "<<endl;
+            cin >> Pin2;
+            if (newPin != Pin2)
+            {
+                cout << "PINs do not match Please enter again" << endl;
+            }
+            else{
+                break;
+            }
+        }
+         currentAccount->setPin(newPin);
+         currentAccount->saveToFile();
+         cout<<"PIN changed successfully"<<endl;
+    }
     else
     {
         cout << "Invalid choice" << endl;
@@ -329,5 +371,6 @@ void ATM::showMenu() {
     cout << "3. Withdraw" << endl;
     cout << "4. Transfer" << endl;
     cout << "5. Mini Statement" << endl;
+    cout<<  "6. Change Pin"<<endl;
     cout << "-1. Logout" << endl;
 }
