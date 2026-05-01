@@ -9,3 +9,5 @@ atm_system
 *.o
 *.out
 .DS_Store
+account_record.txt
+admin_record.txt

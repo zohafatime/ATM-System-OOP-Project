@@ -238,3 +238,11 @@ bool Account::verifyPin(string input)
         return false;
     }
 }
+
+void Account::resetLock()//admin uses this to unlock
+{
+    isLocked = false;
+    failedAttempts = 0;
+    status = true;
+    saveToFile();
+}

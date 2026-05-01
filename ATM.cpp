@@ -368,7 +368,7 @@ bool ATM::authenticate(string accNo, string pin)
         {
             string temp = (*(accounts + i))->getAccountNumber();
             if (accNo == temp)
-            { 
+            {
                 bool ch = (*(accounts + i))->verifyPin(pin);
                 if (ch == 1)
                 {
@@ -542,7 +542,7 @@ void ATM::loadAccounts()
             *(temp + i) = *(accounts + i);
         }
 
-        Account* new_acc = new Account(id, "User", 0.0);
+        Account *new_acc = new Account(id, "User", 0.0);
         *(temp + count) = new_acc;
 
         delete[] accounts;
@@ -552,7 +552,8 @@ void ATM::loadAccounts()
         count++;
 
         char ch;
-        while (infile.get(ch) && ch != '\n');
+        while (infile.get(ch) && ch != '\n')
+            ;
     }
     infile.close();
 }
@@ -644,7 +645,8 @@ void ATM::checkFirstRun()
 void ATM::loadAdmins()
 {
     ifstream infile("admin_record.txt");
-    if (!infile) return;
+    if (!infile)
+        return;
 
     adminCount = 0;
     admins = nullptr;
@@ -662,4 +664,116 @@ void ATM::loadAdmins()
         adminCount++;
     }
     infile.close();
+}
+// finds highest numeric ID, returns next one as 4-digit string
+string ATM::generateUserID()
+{
+    int maxID = -1;
+    for (int i = 0; i < count; i++)
+    {
+        int id = stoi(accounts[i]->getAccountNumber());
+        if (id > maxID)
+            maxID = id;
+    }
+    int newID = maxID + 1;
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%04d", newID);
+    return string(buf);
+}
+
+string ATM::generateAdminID()
+{
+    int maxID = -1;
+    for (int i = 0; i < adminCount; i++)
+    {
+        int id = stoi(admins[i]->getAccountNumber()); // stoi converts str into int
+        if (id > maxID)
+            maxID = id;
+    }
+    int newID = maxID + 1;
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%04d", newID);
+    return string(buf);
+}
+
+// Sets isLocked=false, status=true, resets failedAttempts, saves to file
+void ATM::unlockAccount(string accNo)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (accounts[i]->getAccountNumber() == accNo)
+        {
+            accounts[i]->setIsActive(true);
+            accounts[i]->saveToFile();
+            cout << "Account unlocked" << endl;
+            return;
+        }
+    }
+}
+
+int ATM::getCount() const
+{
+    return count;
+}
+int ATM::getAdminCount() const
+{
+    return adminCount;
+}
+Account *ATM::getAccount(int i) const
+{
+    return accounts[i];
+}
+Account **ATM::getAccounts() const
+{
+    return accounts;
+}
+Admin *ATM::getAdmin(int i) const
+{
+    return admins[i];
+}
+
+void ATM::addAccountToArray(Account *acc)
+{
+    Account **temp = new Account *[count + 1];
+    for (int i = 0; i < count; i++)
+        temp[i] = accounts[i];
+    temp[count] = acc;
+    delete[] accounts;
+    accounts = temp;
+    count++;
+}
+
+void ATM::addAdminToArray(Admin *adm)
+{
+    Admin **temp = new Admin *[adminCount + 1];
+    for (int i = 0; i < adminCount; i++)
+        temp[i] = admins[i];
+    temp[adminCount] = adm;
+    delete[] admins;
+    admins = temp;
+    adminCount++;
+}
+
+void ATM::removeAccount(const string& accNo)
+{
+    // find the logged-in admin — any admin can do this, so just use admins[0]
+    // or pass adminID if needed; here we call Admin's method directly with our private array
+    for (int i = 0; i < adminCount; i++)
+    {
+        admins[i]->removeAccount(accounts, count, accNo);
+        return;
+    }
+}
+
+void ATM::resetUserPin(const string& accNo, const string& newPin)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (accounts[i]->getAccountNumber() == accNo)
+        {
+            accounts[i]->setPin(newPin);
+            accounts[i]->saveToFile();
+            return;
+        }
+    }
 }

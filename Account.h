@@ -38,5 +38,6 @@ public:
     void loadFromFile();
     void showBalance();
     bool verifyPin(string input); 
+    void resetLock(); 
 };
 #endif

@@ -9,27 +9,40 @@
 #include "Transaction.h"
 using namespace std;
 
-class Admin; 
-
+class Admin;
 class ATM
 {
 private:
-    Account *currentAccount;
-    Account **accounts;
-    int count;
-    Admin **admins;      
-    int adminCount;
     double cashAvailable;
     ofstream logFile;
 
+    // back to private
+    Account **accounts;
+    int count;
+    Admin **admins;
+    int adminCount;
+
 public:
+    Account *currentAccount; // public cuz gui reads balance from it
+
+    // for gui:
+    int getCount() const;
+    int getAdminCount() const;
+    Account *getAccount(int i) const;
+    Account **getAccounts() const;
+    Admin *getAdmin(int i) const;
+    void addAccountToArray(Account *acc);
+    void addAdminToArray(Admin *adm);
+    void removeAccount(const string &accNo);
+    void resetUserPin(const string &accNo, const string &newPin);
+    //--
+
     ATM();
     ~ATM();
-
     void run();
-    void runUserMenu();   
-    void runAdminMenu();  
-    void loadAdmins();    
+    void runUserMenu();
+    void runAdminMenu();
+    void loadAdmins();
     bool authenticate(string accNo, string pin);
     void showMenu();
     void processTransaction(int choice);
@@ -40,6 +53,9 @@ public:
     void refillCash(double amount);
     double getCashAvailable();
     void checkFirstRun();
+    string generateUserID();
+    string generateAdminID();
+    void unlockAccount(string accNo);
     friend class Admin;
 };
 
