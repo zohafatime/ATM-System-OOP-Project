@@ -75,7 +75,7 @@ void Admin::removeAccount(Account **&accounts, int &count, string accNo)
     {
         delete accounts[index];
         // left shift
-        for (int i = 0; i < count - 1; i++)
+        for (int i = index; i < count - 1; i++)
         {
             accounts[i] = accounts[i + 1];
         }

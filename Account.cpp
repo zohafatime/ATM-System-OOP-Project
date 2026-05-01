@@ -138,16 +138,8 @@ void Account::saveToFile()
             }
             else
             {   
-                string t_pin;
-                float t_bal;
-                bool t_lock;
-                int count2;
-                infile >>t_pin>>t_bal >>t_lock>>count2;
-                for (int i = 0; i < count2; i++)
-                {
-                    float trashAmt;
-                    infile >> trashAmt;
-                }
+                 char ch;
+                 while (infile.get(ch) && ch != '\n');
             }
         }
         infile.close();
@@ -191,6 +183,7 @@ void Account::loadFromFile()
         {
             int tempcount;
             infile>>t_pin;
+            this->pin=t_pin;
             infile >> balance;
             infile>>isLocked;
             infile >> tempcount;
@@ -204,16 +197,8 @@ void Account::loadFromFile()
             break;
         }
         else
-        {
-            float t_bal;
-            bool t_lock;
-            int count2;
-            infile >>t_pin>> t_bal >>t_lock>>count2;
-            for (int i = 0; i < count2; i++)
-            {
-                float trashAmt;
-                infile >> trashAmt;
-            }
+        {   char ch;
+            while (infile.get(ch) && ch != '\n');
         }
     }
     infile.close();
@@ -233,7 +218,6 @@ bool Account::verifyPin(string input)
         cout << "Access denied as account is currently locked" << endl;
         return false;
     }
-
     if (pin == input)
     {
         failedAttempts = 0;
