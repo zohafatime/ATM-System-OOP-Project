@@ -87,7 +87,6 @@ void ATM::runUserMenu()
             bool ch = authenticate(acc, pin);
             if (ch == 0)
             {
-                cout << "Invalid Credentials please enter again" << endl;
                 continue;
             }
             else
@@ -368,11 +367,15 @@ bool ATM::authenticate(string accNo, string pin)
         if (*(accounts + i) != nullptr)
         {
             string temp = (*(accounts + i))->getAccountNumber();
-            bool ch = (*(accounts + i))->verifyPin(pin);
-            if (ch == 1 && accNo == temp)
-            {
-                currentAccount = (*(accounts + i));
-                return true;
+            if (accNo == temp)
+            { 
+                bool ch = (*(accounts + i))->verifyPin(pin);
+                if (ch == 1)
+                {
+                    currentAccount = (*(accounts + i));
+                    return true;
+                }
+                return false;
             }
         }
     }
@@ -515,46 +518,41 @@ void ATM::loadAccounts()
         return;
     }
 
-    count = 0;
+    for (int i = 0; i < count; i++)
+    {
+        delete *(accounts + i);
+    }
+    delete[] accounts;
     accounts = nullptr;
+    count = 0;
 
     while (!infile.eof())
     {
         string id;
-        string t_pin;
-        float bal;
-        int t_count;
-
         infile >> id;
+
         if (id == "")
         {
             break;
         }
 
-        infile >> t_pin >> bal >> t_count;
-
         Account **temp = new Account *[count + 1];
-
         for (int i = 0; i < count; i++)
         {
             *(temp + i) = *(accounts + i);
         }
-        Account *new_acc = new Account(id, "User", bal);
-        new_acc->setPin(t_pin);
-        *(temp + count) = new_acc;
 
-        for (int j = 0; j < t_count; j++)
-        {
-            float dummy;
-            infile >> dummy;
-        }
+        Account* new_acc = new Account(id, "User", 0.0);
+        *(temp + count) = new_acc;
 
         delete[] accounts;
         accounts = temp;
 
         accounts[count]->loadFromFile();
-
         count++;
+
+        char ch;
+        while (infile.get(ch) && ch != '\n');
     }
     infile.close();
 }
