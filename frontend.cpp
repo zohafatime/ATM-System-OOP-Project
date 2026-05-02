@@ -14,6 +14,11 @@ ATM atm;
     strncpy(dest, src, (size) - 1); \
     (dest)[(size) - 1] = '\0'
 #endif
+#ifndef strncpy_s
+#define strncpy_s(dest, size, src, count) \
+    strncpy(dest, src, count);            \
+    (dest)[(size) - 1] = '\0'
+#endif
 // --- Constants
 const int SCREEN_W = 1100;
 const int SCREEN_H = 750;
@@ -24,6 +29,7 @@ const int MAX_HISTORY = 20;
 #define BTN_H 50
 #define BTN_X (CX - BTN_W / 2)
 // colors
+/*
 static const Color CLR_BG = {10, 25, 45, 255};
 static const Color CLR_PANEL = {20, 40, 70, 255};
 static const Color CLR_GREEN = {255, 255, 255, 255};
@@ -35,7 +41,21 @@ static const Color CLR_WHITE = {240, 245, 250, 255};
 static const Color CLR_SCANLINE = {0, 0, 0, 25};
 static const Color CLR_BORDER = {0, 150, 255, 255};
 static const Color CLR_CARD = {30, 60, 100, 255};
+*/
+// --- Updated Cyber-Security Color Scheme ---
 
+// --- "True Dark" Terminal Color Scheme ---
+static const Color CLR_BG      = { 5, 5, 10, 255 };    // Near Black
+static const Color CLR_PANEL   = { 15, 15, 20, 255 };  // Very Dark Grey
+static const Color CLR_GREEN = { 0, 255, 240, 255 }; // Bright Cyan
+static const Color CLR_DIM     = { 70, 80, 90, 255 };  // Muted Slate
+static const Color CLR_DIMMER  = { 10, 10, 15, 255 };  // Darker Header
+static const Color CLR_AMBER   = { 255, 170, 0, 255 }; // Warning Orange
+static const Color CLR_RED     = { 220, 20, 60, 255 }; // Crimson Error
+static const Color CLR_SCANLINE = {0, 0, 0, 25};
+static const Color CLR_WHITE   = { 200, 210, 220, 255 };// Silver-Grey Text
+static const Color CLR_BORDER  = { 40, 45, 55, 255 };  // Subtle Dark Border
+static const Color CLR_CARD    = { 20, 25, 30, 255 };  // Darker Button Backgrounds
 // -- Screen States --
 // BEFORE: enum had SCR_AUTH through SCR_ADMIN_RM_ACC
 // AFTER: add signup and new admin screens
@@ -89,8 +109,8 @@ typedef struct
     float pendingAmount;
     char inputBuf[16];
     int inputLen;
-    TxRecord history[10];
-    int historyCount;
+    TxRecord history[10];     
+    int historyCount;         
     char message[64];
     float msgTimer;
     float time;
@@ -109,7 +129,7 @@ typedef struct
     char signupName[32];
     char signupPin[5];
     char signupBal[16];
-    int signupStep; // user (0=name,1=pin,2=bal)
+    int signupStep;
     char generatedID[16];
     char loggedInAdminID[32];
     char loggedInName[32];
@@ -194,8 +214,8 @@ int main(void)
 
         DrawRectangle(30, 30, SCREEN_W - 60, 50, CLR_DIMMER);
         DrawRectangleLinesEx((Rectangle){30, 30, (float)SCREEN_W - 60, 50}, 1, CLR_BORDER);
-        DrawTextEx(font, "GreenBank ATM  v2.4.1", (Vector2){50, 45}, 16, 1, CLR_DIM);
-
+        //DrawTextEx(font, "GreenBank ATM  v2.4.1", (Vector2){50, 45}, 16, 1, CLR_DIM);
+        DrawTextEx(font, "FAST-NUCES Secure Banking Terminal", (Vector2){45, 45}, 16, 1, CLR_DIM);
         char tstr[32];
         int sec = (int)s.time % 60, mn = ((int)s.time / 60) % 60;
         snprintf(tstr, sizeof(tstr), "SESSION %02d:%02d", mn, sec);
@@ -276,6 +296,8 @@ int main(void)
             DrawAdminSignup(&s, font);
             break;
         case SCR_USER:
+            break;
+        case SCR_SIGNUP_ROLE: 
             break;
         }
 
@@ -564,7 +586,57 @@ void DrawPin(AppState *s, Font font)
     }
     DrawGreenButton(BTN_X, 400, BTN_W, BTN_H, "BACK", font, 0);
 }
+void DrawMenu(AppState *s, Font font)
+{    
+// --- Properly Aligned Uplink Indicator ---
+float pulse = (float)sin(GetTime() * 4.0) * 0.5f + 0.5f;
+Color pulseColor = CLR_GREEN;
+pulseColor.a = (unsigned char)(pulse * 255);
+DrawCircle(30, 17, 4, pulseColor); 
+DrawTextEx(font, "ENCRYPTED UPLINK ACTIVE", (Vector2){42, 12}, 11, 1, CLR_DIM);
+    // --- 1. CLOCK LOGIC (Draws on the Left) ---
+    time_t now = time(0);
+    struct tm *ltm = localtime(&now);
+    char timeStr[16], dateStr[16], ampm[8];
+    
+    strftime(timeStr, sizeof(timeStr), "%H:%M", ltm);
+    strftime(dateStr, sizeof(dateStr), "%Y-%m-%d", ltm);
+    strftime(ampm, sizeof(ampm), "%p", ltm);
 
+    // Positioning for the Left Side
+    DrawTextEx(font, timeStr, (Vector2){120, 200}, 80, 2, CLR_GREEN);
+    DrawTextEx(font, ampm, (Vector2){330, 230}, 30, 2, CLR_GREEN);
+    DrawTextEx(font, dateStr, (Vector2){120, 290}, 20, 1, CLR_DIM);
+
+    // --- 2. MENU BUTTONS (Draws on the Right) ---
+    // Title shifted right
+    DrawTextEx(font, "--- ACCOUNT MENU ---", (Vector2){610, 100}, 26, 2, CLR_GREEN);
+    
+    const char *labels[] = {
+        "1. Check Balance", "2. Withdraw Cash", "3. Deposit Funds",
+        "4. Funds Transfer", "5. Mini Statement", "6. Change PIN", "0. Logout"};
+
+    int btnY = 160;
+    for (int i = 0; i < 7; i++)
+    {
+        // Shifting button X to 550 and width to 450 to leave room for the clock
+        if (IsButtonPressed(550, btnY, 450, 45))
+        {
+            s->inputLen = 0;
+            s->inputBuf[0] = '\0';
+            if (i == 0) s->screen = SCR_BALANCE;
+            else if (i == 1) s->screen = SCR_WITHDRAW;
+            else if (i == 2) s->screen = SCR_DEPOSIT;
+            else if (i == 3) { s->screen = SCR_TRANSFER; s->transferStep = 0; }
+            else if (i == 4) s->screen = SCR_HISTORY;
+            else if (i == 5) s->screen = SCR_CHANGEPIN;
+            else if (i == 6) s->screen = SCR_AUTH; 
+        }
+        DrawGreenButton(550, btnY, 450, 45, labels[i], font, 0);
+        btnY += 55;
+    }
+}
+/*
 void DrawMenu(AppState *s, Font font)
 {
     DrawCenteredText(font, "--- ACCOUNT MENU ---", 80, 26, CLR_GREEN);
@@ -605,7 +677,7 @@ void DrawMenu(AppState *s, Font font)
         my += 45;
     }
 }
-
+*/
 void DrawBalance(AppState *s, Font font)
 {
     DrawCenteredText(font, "ACCOUNT BALANCE", 110, 26, CLR_GREEN);
@@ -1112,12 +1184,23 @@ void DrawChangePin(AppState *s, Font font)
         if (i < s->inputLen)
             DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
     }
-
-    if (IsButtonPressed(BTN_X, 390, BTN_W, BTN_H))
-    {
-        atm.currentAccount->setPin(string(s->inputBuf));
-        atm.currentAccount->saveToFile();
+        
+    if (IsButtonPressed(BTN_X, 390, BTN_W, BTN_H)) {
+    int status = atm.validateAndSetPin(s->inputBuf);
+    if (status == 0) {
         ShowMessage(s, "PIN CHANGED SUCCESSFULLY");
+        s->screen = SCR_MENU; // Go back to the main menu
+    } else if (status == 1) {
+        ShowMessage(s, "ERROR: MUST BE 4 DIGITS");
+    }
+    else if (status == 2) {
+    ShowMessage(s, "ERROR: ONLY NUMBERS ALLOWED");
+    }
+    else {
+        ShowMessage(s, "ERROR: PINS DO NOT MATCH");
+    }
+}
+    if (IsButtonPressed(BTN_X, 470, BTN_W, BTN_H)) {
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_MENU;
