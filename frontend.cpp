@@ -735,9 +735,9 @@ void DrawDeposit(AppState *s, Font font)
 }
 void DrawHistory(AppState *s, Font font)
 {
-    DrawCenteredText(font, "--- MINI STATEMENT ---", 80, 26, CLR_GREEN);
+    DrawCenteredText(font, "--- MINI STATEMENT ---", 190, 26, CLR_GREEN);
     
-    int startY = 150; // Adjusted to sit better within the blue UI frame
+    int startY = 230; // Adjusted to sit better within the blue UI frame
     
     // Agar koi transaction nahi hui
     if (s->historyCount == 0)
@@ -776,8 +776,8 @@ void DrawHistory(AppState *s, Font font)
 
 void DrawConfirm(AppState *s, Font font)
 {
-    DrawCenteredText(font, "CONFIRM TRANSACTION", 210, 26, CLR_GREEN);
-    if (IsButtonPressed(CX - 220, 380, 200, BTN_H))
+    DrawCenteredText(font, "CONFIRM TRANSACTION", 190, 26, CLR_GREEN);
+    if (IsButtonPressed(CX - 220, 350, 200, BTN_H))
     {
         if (strcmp(s->confirmAction, "WITHDRAW") == 0)
         {
@@ -847,17 +847,17 @@ void DrawConfirm(AppState *s, Font font)
     }
     char confirmLine[64];
     snprintf(confirmLine, sizeof(confirmLine), "AMOUNT: PKR %.2f", s->pendingAmount);
-    DrawCenteredText(font, confirmLine, 220, 22, CLR_AMBER);
-    DrawGreenButton(CX - 220, 380, 200, BTN_H, "CONFIRM", font, 0);
+    DrawCenteredText(font, confirmLine, 240, 22, CLR_AMBER);
+    DrawGreenButton(CX - 220, 350, 200, BTN_H, "CONFIRM", font, 0);
 
-    if (IsButtonPressed(CX + 20, 380, 200, BTN_H))
+    if (IsButtonPressed(CX + 20, 350, 200, BTN_H))
         s->screen = SCR_MENU;
-    DrawGreenButton(CX + 20, 380, 200, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(CX + 20, 350, 200, BTN_H, "CANCEL", font, 0);
 }
 
 void DrawReceipt(AppState *s, Font font)
 {
-    DrawCenteredText(font, "TRANSACTION COMPLETE", 110, 26, CLR_GREEN);
+    DrawCenteredText(font, "TRANSACTION COMPLETE", 190, 26, CLR_GREEN);
 
     // show what was done
     char line1[64], line2[64], line3[64];
@@ -865,13 +865,13 @@ void DrawReceipt(AppState *s, Font font)
     snprintf(line2, sizeof(line2), "AMOUNT:  PKR %.2f", s->pendingAmount);
     snprintf(line3, sizeof(line3), "BALANCE: PKR %.2f", s->balance);
 
-    DrawTextEx(font, line1, (Vector2){200, 200}, 20, 1, CLR_DIM);
-    DrawTextEx(font, line2, (Vector2){200, 240}, 20, 1, CLR_GREEN);
-    DrawTextEx(font, line3, (Vector2){200, 280}, 20, 1, CLR_AMBER);
+    DrawCenteredText(font, line1, 250, 20, CLR_DIM);
+    DrawCenteredText(font, line2, 290, 20, CLR_GREEN);
+    DrawCenteredText(font, line3, 330, 20, CLR_AMBER);
 
-    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
+    if (IsButtonPressed(BTN_X, 420, BTN_W, BTN_H))
         s->screen = SCR_MENU;
-    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK TO MENU", font, 0);
+    DrawGreenButton(BTN_X, 420, BTN_W, BTN_H, "BACK TO MENU", font, 0);
 }
 
 void DrawError(AppState *s, Font font)
@@ -1257,29 +1257,28 @@ void DrawAdminRmAcc(AppState *s, Font font)
 // Auto generates ID, shows it at the end
 void DrawSignup(AppState *s, Font font)
 {
-    DrawCenteredText(font, "NEW ACCOUNT REGISTRATION", 80, 24, CLR_GREEN);
+    DrawCenteredText(font, "NEW ACCOUNT REGISTRATION", 210, 26, CLR_GREEN);
 
     if (s->signupStep == 0)
     {
-        // Step 0: enter name (allow letters via keyboard)
-        DrawCenteredText(font, "ENTER YOUR FULL NAME:", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER YOUR FULL NAME:", 260, 18, CLR_DIM);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->signupName[0] != '\0')
+        // SYNCED: Y is 410 for both!
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->signupName[0] != '\0')
         {
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->signupStep = 1;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else if (s->signupStep == 1)
     {
-        // Step 1: enter 4-digit PIN
-        DrawCenteredText(font, "SET YOUR 4-DIGIT PIN:", 140, 18, CLR_DIM);
-        int bx = SCREEN_W / 2 - 98, by = 220;
+        DrawCenteredText(font, "SET YOUR 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
             DrawRectangle(bx + i * 44, by, 36, 50, CLR_CARD);
@@ -1287,45 +1286,46 @@ void DrawSignup(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
+        
+        // SYNCED: Y is 410 for both!
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
             strcpy_s(s->signupPin, sizeof(s->signupPin), s->inputBuf);
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->signupStep = 2;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else if (s->signupStep == 2)
     {
-        // Step 2: enter initial deposit
-        DrawCenteredText(font, "ENTER INITIAL DEPOSIT (PKR):", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER INITIAL DEPOSIT (PKR):", 260, 18, CLR_DIM);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen > 0)
+        // SYNCED: Y is 410 for both!
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
         {
-            // Generate ID, create account, save
             string newID = atm.generateUserID();
             strcpy_s(s->generatedID, sizeof(s->generatedID), newID.c_str());
 
-            double bal = atof(s->inputBuf); // string to double
+            double bal = atof(s->inputBuf);
             Account *newAcc = new Account(newID, string(s->signupName), bal);
             newAcc->setPin(string(s->signupPin));
             newAcc->saveToFile();
 
-            atm.addAccountToArray(newAcc); // save
+            atm.addAccountToArray(newAcc); 
 
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->screen = SCR_SIGNUP_DONE;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "CREATE ACCOUNT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CREATE ACCOUNT", font, 0);
     }
 
-    // back button
-    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
+    // SYNCED: Back Button Y is 480 for both!
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         if (s->signupStep > 0)
         {
@@ -1336,21 +1336,22 @@ void DrawSignup(AppState *s, Font font)
         else
             s->screen = SCR_AUTH;
     }
-    DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "BACK", font, 0);
+    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
 }
 
-// Show generated ID after successful signup
 void DrawSignupDone(AppState *s, Font font)
 {
-    DrawCenteredText(font, "ACCOUNT CREATED!", 110, 28, CLR_GREEN);
-    DrawCenteredText(font, "YOUR ACCOUNT ID IS:", 170, 18, CLR_DIM);
-    DrawCenteredText(font, s->generatedID, 210, 40, CLR_AMBER);
-    DrawCenteredText(font, "PLEASE SAVE THIS ID TO LOGIN", 270, 16, CLR_DIM);
+    DrawCenteredText(font, "ACCOUNT CREATED!", 210, 28, CLR_GREEN);
+    DrawCenteredText(font, "YOUR ACCOUNT ID IS:", 260, 18, CLR_DIM);
+    DrawCenteredText(font, s->generatedID, 320, 40, CLR_AMBER);
+    DrawCenteredText(font, "PLEASE SAVE THIS ID TO LOGIN", 380, 16, CLR_DIM);
 
-    if (IsButtonPressed(BTN_X, 340, BTN_W, BTN_H))
+    // SYNCED: Y = 480
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
         s->screen = SCR_AUTH;
-    DrawGreenButton(BTN_X, 340, BTN_W, BTN_H, "PROCEED TO LOGIN", font, 0);
+    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "PROCEED TO LOGIN", font, 0);
 }
+// Show generated ID after successful signup
 
 // Admin views all accounts in a scrollable list
 void DrawAdminViewAccounts(AppState *s, Font font)
@@ -1499,27 +1500,28 @@ void DrawAdminUnlock(AppState *s, Font font)
 // Admin adds a user account (same as signup but from admin side)
 void DrawAdminAddAcc(AppState *s, Font font)
 {
-    DrawCenteredText(font, "ADD NEW ACCOUNT", 80, 24, CLR_GREEN);
+    DrawCenteredText(font, "ADD NEW ACCOUNT", 210, 26, CLR_GREEN);
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER HOLDER NAME:", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER HOLDER NAME:", 260, 18, CLR_DIM);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->signupName[0] != '\0')
+        // SYNCED: Y = 410
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->signupName[0] != '\0')
         {
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->adminStep = 1;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else if (s->adminStep == 1)
     {
-        DrawCenteredText(font, "SET 4-DIGIT PIN:", 140, 18, CLR_DIM);
-        int bx = SCREEN_W / 2 - 98, by = 220;
+        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
             DrawRectangle(bx + i * 44, by, 36, 50, CLR_CARD);
@@ -1527,23 +1529,26 @@ void DrawAdminAddAcc(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
+        
+        // SYNCED: Y = 410
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
             strcpy_s(s->signupPin, sizeof(s->signupPin), s->inputBuf);
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->adminStep = 2;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else
     {
-        DrawCenteredText(font, "INITIAL BALANCE (PKR):", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "INITIAL BALANCE (PKR):", 260, 18, CLR_DIM);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen > 0)
+        // SYNCED: Y = 410
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
         {
             string newID = atm.generateUserID();
             strcpy_s(s->generatedID, sizeof(s->generatedID), newID.c_str());
@@ -1553,9 +1558,8 @@ void DrawAdminAddAcc(AppState *s, Font font)
             newAcc->setPin(string(s->signupPin));
             newAcc->saveToFile();
 
-            atm.addAccountToArray(newAcc); // save
+            atm.addAccountToArray(newAcc); 
 
-            // show generated ID
             char msg[32];
             snprintf(msg, sizeof(msg), "CREATED! ID: %s", newID.c_str());
             ShowMessage(s, msg);
@@ -1566,10 +1570,11 @@ void DrawAdminAddAcc(AppState *s, Font font)
             s->adminStep = 0;
             s->screen = SCR_ADMIN;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "CREATE", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CREATE", font, 0);
     }
 
-    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
+    // SYNCED: Y = 480
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         s->adminStep = 0;
         s->inputLen = 0;
@@ -1577,33 +1582,33 @@ void DrawAdminAddAcc(AppState *s, Font font)
         s->signupName[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "CANCEL", font, 0);
 }
-
 // Admin creates a new admin,auto-generates admin ID, shows it
 void DrawAdminSignup(AppState *s, Font font)
 {
-    DrawCenteredText(font, "ADD NEW ADMIN", 80, 24, CLR_GREEN);
+    DrawCenteredText(font, "ADD NEW ADMIN", 210, 26, CLR_GREEN);
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER ADMIN NAME:", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER ADMIN NAME:", 260, 18, CLR_DIM);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->signupName[0] != '\0')
+        // SYNCED: Y = 410
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->signupName[0] != '\0')
         {
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->adminStep = 1;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else
     {
-        DrawCenteredText(font, "SET 4-DIGIT PIN:", 140, 18, CLR_DIM);
-        int bx = SCREEN_W / 2 - 98, by = 220;
+        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
             DrawRectangle(bx + i * 44, by, 36, 50, CLR_CARD);
@@ -1611,36 +1616,35 @@ void DrawAdminSignup(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
+        
+        // SYNCED: Y = 410
+        if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
             string newID = atm.generateAdminID();
             strcpy_s(s->generatedID, sizeof(s->generatedID), newID.c_str());
 
-            // save to file
             ofstream outfile("admin_record.txt", ios::app);
             outfile << newID << " " << s->signupName << " " << s->inputBuf << endl;
             outfile.close();
 
-            // add to memory
             Admin *newAdm = new Admin(string(s->signupName), newID, string(s->inputBuf));
             atm.addAdminToArray(newAdm);
 
-            // show generated ID on screen
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->signupName[0] = '\0';
             s->adminStep = 0;
 
-            // display generated ID via message
             char msg[32];
             snprintf(msg, sizeof(msg), "ADMIN CREATED! ID: %s", newID.c_str());
             ShowMessage(s, msg);
             s->screen = SCR_ADMIN;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "CREATE ADMIN", font, 0);
+        DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CREATE ADMIN", font, 0);
     }
 
-    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
+    // SYNCED: Y = 480
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         s->adminStep = 0;
         s->inputLen = 0;
@@ -1648,5 +1652,6 @@ void DrawAdminSignup(AppState *s, Font font)
         s->signupName[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "BACK", font, 0);
+    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
 }
+
