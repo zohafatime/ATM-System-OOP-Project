@@ -9,6 +9,7 @@
 #include <math.h>
 ATM atm;
 Sound buttonBeep;
+Sound moneySound;
 #ifndef strcpy_s
 #define strcpy_s(dest, size, src)   \
     strncpy(dest, src, (size) - 1); \
@@ -169,8 +170,9 @@ int main(void)
 
     SetTargetFPS(60);
     InitAudioDevice(); 
-SetMasterVolume(1.0); // Force volume to max
+SetMasterVolume(1.0); 
     buttonBeep = LoadSound("Resources/beep.mp3");
+    moneySound = LoadSound("Resources/money.mp3");
     Font font = LoadFontEx("resources/monospace.ttf", 20, 0, 256);
     if (font.texture.id == 0)
         font = GetFontDefault();
@@ -306,6 +308,7 @@ SetMasterVolume(1.0); // Force volume to max
     UnloadFont(font);
     UnloadTexture(bgImage);
     UnloadSound(buttonBeep);
+    UnloadSound(moneySound);
     CloseAudioDevice();
     CloseWindow();
     return 0;
@@ -777,7 +780,7 @@ void DrawConfirm(AppState *s, Font font)
         {
             bool ok = atm.currentAccount->withdraw((double)s->pendingAmount);
             if (ok)
-            {
+            {  PlaySound(moneySound);
                 s->balance = (float)atm.currentAccount->getBalance();
                 AddHistory(s, "ATM Withdrawal", s->pendingAmount, 0);
                 s->screen = SCR_RECEIPT;
@@ -791,6 +794,7 @@ void DrawConfirm(AppState *s, Font font)
         else if (strcmp(s->confirmAction, "DEPOSIT") == 0)
         {
             atm.currentAccount->deposit((double)s->pendingAmount);
+            PlaySound(moneySound);
             s->balance = (float)atm.currentAccount->getBalance();
             AddHistory(s, "Cash Deposit", s->pendingAmount, 1);
             s->screen = SCR_RECEIPT;
@@ -824,6 +828,7 @@ void DrawConfirm(AppState *s, Font font)
                     bool ok = atm.currentAccount->transfer(dest, (double)s->pendingAmount);
                     if (ok)
                     {
+                       PlaySound(moneySound);
                         s->balance = (float)atm.currentAccount->getBalance();
                         char desc[32];
                         snprintf(desc, sizeof(desc), "Trf to %s", s->targetAccount);
@@ -1214,6 +1219,7 @@ void DrawAdminRefill(AppState *s, Font font)
     if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)  
     {
         atm.refillCash((double)atof(s->inputBuf));
+        PlaySound(moneySound);
         ShowMessage(s, "ATM CASH REFILLED SUCCESSFULLY");
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
