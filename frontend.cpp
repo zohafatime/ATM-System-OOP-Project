@@ -99,6 +99,7 @@ typedef struct
     float pendingAmount;
     char inputBuf[16];
     int inputLen;
+    int adminPage = 0;
     TxRecord history[10];     
     int historyCount;         
     char message[64];
@@ -216,7 +217,6 @@ SetMasterVolume(1.0);
         char tstr[32];
         int sec = (int)s.time % 60, mn = ((int)s.time / 60) % 60;
         snprintf(tstr, sizeof(tstr), "SESSION %02d:%02d", mn, sec);
-        DrawTextEx(font, tstr, (Vector2){(float)SCREEN_W - 200, 45}, 16, 1, CLR_WHITE);
 
         switch (s.screen)
         {
@@ -1185,22 +1185,22 @@ void DrawAdmin(AppState *s, Font font)
             s->inputBuf[0] = '\0';
             s->adminStep = 0;
 
-            if (i == 0)      
-            s->screen = SCR_ADMIN_VIEW;
-            else if (i == 1) 
-            s->screen = SCR_ADMIN_ADD_ACC;
-            else if (i == 2) 
-            s->screen = SCR_ADMIN_RM_ACC;
-            else if (i == 3) 
-            s->screen = SCR_ADMIN_RESET_PIN;
-            else if (i == 4) 
-            s->screen = SCR_ADMIN_UNLOCK;
-            else if (i == 5) 
-            s->screen = SCR_ADMIN_SIGNUP;
-            else if (i == 6) 
-            s->screen = SCR_ADMIN_REFILL;
-            else if (i == 7) 
-            s->screen = SCR_AUTH;
+            if (i == 0)
+    { s->screen = SCR_ADMIN_VIEW; s->adminPage = 0; }
+else if (i == 1)
+    s->screen = SCR_ADMIN_ADD_ACC;
+else if (i == 2)
+    s->screen = SCR_ADMIN_RM_ACC;
+else if (i == 3)
+    s->screen = SCR_ADMIN_RESET_PIN;
+else if (i == 4)
+    s->screen = SCR_ADMIN_UNLOCK;
+else if (i == 5)
+    s->screen = SCR_ADMIN_SIGNUP;
+else if (i == 6)
+    s->screen = SCR_ADMIN_REFILL;
+else if (i == 7)
+    s->screen = SCR_AUTH;
         }
         DrawGreenButton(CX - 300, my, 600, btnH, labels[i], font, 0);
         my += btnH + gap; 
@@ -1370,15 +1370,23 @@ void DrawAdminViewAccounts(AppState *s, Font font)
 {
     DrawCenteredText(font, "ALL ACCOUNTS", 200, 24, CLR_GREEN);
 
+    int pageSize = 6;
+    int totalPages = (atm.getCount() + pageSize - 1) / pageSize;
+    if (totalPages == 0) totalPages = 1;
+
+    int startIndex = s->adminPage * pageSize;
+    int endIndex = startIndex + pageSize;
+    if (endIndex > atm.getCount()) endIndex = atm.getCount();
+
     int startY = 240;
+
     if (atm.getCount() == 0)
     {
         DrawCenteredText(font, "NO ACCOUNTS FOUND", startY + 30, 18, CLR_WHITE);
     }
     else
     {
-        int show = atm.getCount() < 6 ? atm.getCount() : 6;
-        for (int i = 0; i < show; i++)
+        for (int i = startIndex; i < endIndex; i++)
         {
             char line[64];
             snprintf(line, sizeof(line), "ID:%s  %s  PKR:%.0f  %s",
@@ -1387,19 +1395,34 @@ void DrawAdminViewAccounts(AppState *s, Font font)
                      atm.getAccount(i)->getBalance(),
                      atm.getAccount(i)->getIsActive() ? "ACTIVE" : "LOCKED");
             Color c = atm.getAccount(i)->getIsActive() ? CLR_GREEN : CLR_RED;
-            DrawTextEx(font, line, (Vector2){(float)(CX - 280), (float)(startY + i * 35)}, 16, 1, c);
+            DrawTextEx(font, line, (Vector2){(float)(CX - 280), (float)(startY + (i - startIndex) * 35)}, 16, 1, c);
         }
-        if (atm.getCount() > 6)
-        {
-            char more[32];
-            snprintf(more, sizeof(more), "...and %d more accounts", atm.getCount() - 6);
-            DrawTextEx(font, more, (Vector2){(float)(CX - 280), (float)(startY + 6 * 35)}, 14, 1, CLR_WHITE);
-        }
+
+        char pageInfo[32];
+        snprintf(pageInfo, sizeof(pageInfo), "PAGE %d / %d", s->adminPage + 1, totalPages);
+        DrawCenteredText(font, pageInfo, 460, 14, CLR_WHITE);
     }
 
-    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
+    if (s->adminPage > 0)
+    {
+        if (IsButtonPressed(CX - 290, 478, 80, BTN_H))
+            s->adminPage--;
+        DrawGreenButton(CX - 290, 478, 80, BTN_H, "< PREV", font, 0);
+    }
+
+    if (IsButtonPressed(BTN_X, 478, BTN_W, BTN_H))
+    {
+        s->adminPage = 0;
         s->screen = SCR_ADMIN;
-    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
+    }
+    DrawGreenButton(BTN_X, 478, BTN_W, BTN_H, "BACK", font, 0);
+
+    if (s->adminPage < totalPages - 1)
+    {
+        if (IsButtonPressed(CX + 210, 478, 80, BTN_H))
+            s->adminPage++;
+        DrawGreenButton(CX + 210, 478, 80, BTN_H, "NEXT >", font, 0);
+    }
 }
 // Admin resets a user's PIN
 void DrawAdminResetPin(AppState *s, Font font)
