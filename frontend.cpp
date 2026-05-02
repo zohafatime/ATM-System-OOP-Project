@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 ATM atm;
-
+Sound buttonBeep;
 #ifndef strcpy_s
 #define strcpy_s(dest, size, src)   \
     strncpy(dest, src, (size) - 1); \
@@ -28,25 +28,15 @@ const int MAX_HISTORY = 20;
 #define BTN_W 320
 #define BTN_H 50
 #define BTN_X (CX - BTN_W / 2)
-// colors
-/*
-static const Color CLR_BG = {10, 25, 45, 255};
-static const Color CLR_PANEL = {20, 40, 70, 255};
-static const Color CLR_GREEN = {255, 255, 255, 255};
-static const Color CLR_DIM = {140, 160, 185, 255};
-static const Color CLR_DIMMER = {25, 45, 75, 255};
-static const Color CLR_AMBER = {255, 220, 50, 255};
-static const Color CLR_RED = {240, 70, 70, 255};
-static const Color CLR_WHITE = {240, 245, 250, 255};
-static const Color CLR_SCANLINE = {0, 0, 0, 25};
-static const Color CLR_BORDER = {0, 150, 255, 255};
-static const Color CLR_CARD = {30, 60, 100, 255};
-*/
+
+
 // --- Updated Cyber-Security Color Scheme ---
 
 // --- "True Dark" Terminal Color Scheme ---
+
 static const Color CLR_BG      = { 5, 5, 10, 255 };    // Near Black
 static const Color CLR_PANEL   = { 15, 15, 20, 0 };  // Very Dark Grey
+
 static const Color CLR_GREEN = { 0, 255, 240, 255 }; // Bright Cyan
 static const Color CLR_DIM     = { 70, 80, 90, 0 };  // Muted Slate
 static const Color CLR_DIMMER  = { 10, 10, 15, 0 };  // Darker Header
@@ -56,9 +46,7 @@ static const Color CLR_SCANLINE = {0, 0, 0, 25};
 static const Color CLR_WHITE   = { 200, 210, 220, 255 };// Silver-Grey Text
 static const Color CLR_BORDER  = { 40, 45, 55, 0 };  // Subtle Dark Border
 static const Color CLR_CARD    = { 20, 25, 30, 255 };  // Darker Button Backgrounds
-// -- Screen States --
-// BEFORE: enum had SCR_AUTH through SCR_ADMIN_RM_ACC
-// AFTER: add signup and new admin screens
+
 typedef enum
 {
     SCR_AUTH,         // Login or Signup
@@ -178,8 +166,11 @@ int main(void)
     atm.checkFirstRun();
     InitWindow(SCREEN_W, SCREEN_H, "ATM ");
     Texture2D bgImage = LoadTexture("Resources/Atm.png");
-    SetTargetFPS(60);
 
+    SetTargetFPS(60);
+    InitAudioDevice(); 
+SetMasterVolume(1.0); // Force volume to max
+    buttonBeep = LoadSound("Resources/beep.mp3");
     Font font = LoadFontEx("resources/monospace.ttf", 20, 0, 256);
     if (font.texture.id == 0)
         font = GetFontDefault();
@@ -314,6 +305,8 @@ int main(void)
 
     UnloadFont(font);
     UnloadTexture(bgImage);
+    UnloadSound(buttonBeep);
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
@@ -347,10 +340,13 @@ void DrawCenteredText(Font font, const char *text, int y, int size, Color col)
 
 int IsButtonPressed(int x, int y, int w, int h)
 {
-    if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
-        return 0;
+    if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) return 0;
     Vector2 m = GetMousePosition();
-    return m.x >= x && m.x <= x + w && m.y >= y && m.y <= y + h;
+    bool isInside = (m.x >= x && m.x <= x + w && m.y >= y && m.y <= y + h);
+
+    if (isInside) PlaySound(buttonBeep); // Use the global variable name
+
+    return isInside;
 }
 
 void DrawGreenButton(int x, int y, int w, int h, const char *label, Font font, int hover)
@@ -903,7 +899,7 @@ void HandleInput(AppState *s)
             for (int k = KEY_ZERO; k <= KEY_NINE; k++)
             {
                 if (IsKeyPressed(k) && s->inputLen < MAX_PIN)
-                {
+                {  PlaySound(buttonBeep);
                     s->inputBuf[s->inputLen++] = '0' + (k - KEY_ZERO);
                     s->inputBuf[s->inputLen] = '\0';
                     s->pinLen = s->inputLen;
@@ -994,7 +990,12 @@ void HandleInput(AppState *s)
     // 3. BACKSPACE KI LOGIC (Delete karne ke liye)
     if (IsKeyPressed(KEY_BACKSPACE) && s->inputLen > 0)
     {
+        if ((s->screen == SCR_PIN && s->loginStep == 1) || s->screen == SCR_CHANGEPIN)
+        {
+            PlaySound(buttonBeep);
+        }
         s->inputBuf[--s->inputLen] = '\0';
+
         if (s->screen == SCR_PIN && s->loginStep == 1)
             s->pinLen = s->inputLen;
     }
@@ -1019,6 +1020,7 @@ void HandleInput(AppState *s)
         {
             if (IsKeyPressed(k) && s->inputLen < MAX_PIN)
             {
+                PlaySound(buttonBeep);
                 s->inputBuf[s->inputLen++] = '0' + (k - KEY_ZERO);
                 s->inputBuf[s->inputLen] = '\0';
             }
@@ -1144,12 +1146,18 @@ void DrawChangePin(AppState *s, Font font)
 }
 // BEFORE: only refill and remove worked, rest said COMING SOON
 // AFTER: all options functional, uses loggedInAdminID to find correct admin
+
+
 void DrawAdmin(AppState *s, Font font)
 {
-    DrawCenteredText(font, "--- ADMIN MENU ---", 80, 26, CLR_GREEN);
+    // CHANGED: Title y from 80 → 185 (was above screen boundary)
+    DrawCenteredText(font, "--- ADMIN MENU ---", 185, 26, CLR_GREEN);
+
+    // CHANGED: Welcome y from 108 → 213 (was above screen boundary)
     char welcome[48];
     snprintf(welcome, sizeof(welcome), "WELCOME, %s", s->loggedInName);
-    DrawCenteredText(font, welcome, 108, 18, CLR_AMBER);
+    DrawCenteredText(font, welcome, 213, 16, CLR_AMBER);
+
     const char *labels[] = {
         "1. View All Accounts",
         "2. Add Account",
@@ -1160,48 +1168,50 @@ void DrawAdmin(AppState *s, Font font)
         "7. Refill ATM Cash",
         "0. Logout"};
 
-    int my = 110;
+    int btnH = 32;
+    int gap = 3;
+    int my = 232;
+
     for (int i = 0; i < 8; i++)
     {
-        if (IsButtonPressed(CX - 300, my, 600, 38))
+        if (IsButtonPressed(CX - 300, my, 600, btnH))
         {
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->adminStep = 0;
 
-            if (i == 0)
-                s->screen = SCR_ADMIN_VIEW;
-            else if (i == 1)
-                s->screen = SCR_ADMIN_ADD_ACC;
-            else if (i == 2)
-                s->screen = SCR_ADMIN_RM_ACC;
-            else if (i == 3)
-                s->screen = SCR_ADMIN_RESET_PIN;
-            else if (i == 4)
-                s->screen = SCR_ADMIN_UNLOCK;
-            else if (i == 5)
-                s->screen = SCR_ADMIN_SIGNUP;
-            else if (i == 6)
-                s->screen = SCR_ADMIN_REFILL;
-            else if (i == 7)
-                s->screen = SCR_AUTH; // logout
+            if (i == 0)      
+            s->screen = SCR_ADMIN_VIEW;
+            else if (i == 1) 
+            s->screen = SCR_ADMIN_ADD_ACC;
+            else if (i == 2) 
+            s->screen = SCR_ADMIN_RM_ACC;
+            else if (i == 3) 
+            s->screen = SCR_ADMIN_RESET_PIN;
+            else if (i == 4) 
+            s->screen = SCR_ADMIN_UNLOCK;
+            else if (i == 5) 
+            s->screen = SCR_ADMIN_SIGNUP;
+            else if (i == 6) 
+            s->screen = SCR_ADMIN_REFILL;
+            else if (i == 7) 
+            s->screen = SCR_AUTH;
         }
-        DrawGreenButton(CX - 300, my, 600, 38, labels[i], font, 0);
-        my += 38;
+        DrawGreenButton(CX - 300, my, 600, btnH, labels[i], font, 0);
+        my += btnH + gap; 
     }
 }
 // --- ADMIN SCREENS ---
-
 void DrawAdminRefill(AppState *s, Font font)
 {
-    DrawCenteredText(font, "REFILL ATM CASH", 110, 26, CLR_GREEN);
-    DrawCenteredText(font, "ENTER AMOUNT TO REFILL:", 160, 18, CLR_WHITE);
+    DrawCenteredText(font, "REFILL ATM CASH", 200, 26, CLR_GREEN);      
+    DrawCenteredText(font, "ENTER AMOUNT TO REFILL:", 250, 18, CLR_WHITE); 
 
     char disp[32];
     snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-    DrawCenteredText(font, disp, 215, 24, CLR_GREEN);
+    DrawCenteredText(font, disp, 310, 24, CLR_GREEN);                    
 
-    if (IsButtonPressed(CX - 200, 330, 180, BTN_H) && s->inputLen > 0)
+    if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)  
     {
         atm.refillCash((double)atof(s->inputBuf));
         ShowMessage(s, "ATM CASH REFILLED SUCCESSFULLY");
@@ -1209,47 +1219,45 @@ void DrawAdminRefill(AppState *s, Font font)
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX - 200, 330, 180, BTN_H, "REFILL", font, 0);
+    DrawGreenButton(CX - 200, 390, 180, BTN_H, "REFILL", font, 0);     
 
-    if (IsButtonPressed(CX + 20, 330, 180, BTN_H))
+    if (IsButtonPressed(CX + 20, 390, 180, BTN_H))                       
     {
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX + 20, 330, 180, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(CX + 20, 390, 180, BTN_H, "CANCEL", font, 0);       
 }
 
 void DrawAdminRmAcc(AppState *s, Font font)
 {
-    DrawCenteredText(font, "REMOVE ACCOUNT", 110, 26, CLR_GREEN);
-    DrawCenteredText(font, "ENTER ACCOUNT NO. TO REMOVE:", 160, 18, CLR_WHITE);
+    DrawCenteredText(font, "REMOVE ACCOUNT", 200, 26, CLR_GREEN);
+    DrawCenteredText(font, "ENTER ACCOUNT NO. TO REMOVE:", 250, 18, CLR_WHITE);
 
     char disp[32];
     snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-    DrawCenteredText(font, disp, 215, 24, CLR_GREEN);
+    DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-    // finds correct admin by loggedInAdminID
-    if (IsButtonPressed(CX - 200, 330, 180, BTN_H) && s->inputLen > 0)
+    if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)
     {
-        // find which admin is logged in, use that one
         atm.removeAccount(string(s->inputBuf));
         ShowMessage(s, "ACCOUNT REMOVED");
-
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX - 200, 330, 180, BTN_H, "REMOVE", font, 0);
+    DrawGreenButton(CX - 200, 390, 180, BTN_H, "REMOVE", font, 0);
 
-    if (IsButtonPressed(CX + 20, 330, 180, BTN_H))
+    if (IsButtonPressed(CX + 20, 390, 180, BTN_H))
     {
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX + 20, 330, 180, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(CX + 20, 390, 180, BTN_H, "CANCEL", font, 0);
 }
+
 
 // User signup — 3 steps: name, pin, initial balance
 // Auto generates ID, shows it at the end
@@ -1354,57 +1362,53 @@ void DrawSignupDone(AppState *s, Font font)
 // Admin views all accounts in a scrollable list
 void DrawAdminViewAccounts(AppState *s, Font font)
 {
-    DrawCenteredText(font, "ALL ACCOUNTS", 80, 24, CLR_GREEN);
+    DrawCenteredText(font, "ALL ACCOUNTS", 200, 24, CLR_GREEN);
 
-    int startY = 130;
+    int startY = 240;
     if (atm.getCount() == 0)
     {
         DrawCenteredText(font, "NO ACCOUNTS FOUND", startY + 30, 18, CLR_WHITE);
     }
     else
     {
-        // show up to 6 accounts
         int show = atm.getCount() < 6 ? atm.getCount() : 6;
         for (int i = 0; i < show; i++)
         {
             char line[64];
-            // show ID, name, balance, and locked status
             snprintf(line, sizeof(line), "ID:%s  %s  PKR:%.0f  %s",
                      atm.getAccount(i)->getAccountNumber().c_str(),
                      atm.getAccount(i)->getHolderName().c_str(),
                      atm.getAccount(i)->getBalance(),
                      atm.getAccount(i)->getIsActive() ? "ACTIVE" : "LOCKED");
             Color c = atm.getAccount(i)->getIsActive() ? CLR_GREEN : CLR_RED;
-            DrawTextEx(font, line, (Vector2){60, (float)(startY + i * 30)}, 16, 1, c);
+            DrawTextEx(font, line, (Vector2){(float)(CX - 280), (float)(startY + i * 35)}, 16, 1, c);
         }
         if (atm.getCount() > 6)
         {
             char more[32];
             snprintf(more, sizeof(more), "...and %d more accounts", atm.getCount() - 6);
-            DrawTextEx(font, more, (Vector2){60, (float)(startY + 6 * 30)}, 14, 1, CLR_WHITE);
+            DrawTextEx(font, more, (Vector2){(float)(CX - 280), (float)(startY + 6 * 35)}, 14, 1, CLR_WHITE);
         }
     }
 
-    if (IsButtonPressed(BTN_X, 530, BTN_W, BTN_H))
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
         s->screen = SCR_ADMIN;
-    DrawGreenButton(BTN_X, 530, BTN_W, BTN_H, "BACK", font, 0);
+    DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
 }
-
 // Admin resets a user's PIN
 void DrawAdminResetPin(AppState *s, Font font)
 {
-    DrawCenteredText(font, "RESET USER PIN", 80, 24, CLR_GREEN);
+    DrawCenteredText(font, "RESET USER PIN", 185, 24, CLR_GREEN);
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER USER ACCOUNT ID:", 140, 18, CLR_WHITE);
+        DrawCenteredText(font, "ENTER USER ACCOUNT ID:", 230, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-        DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+        DrawCenteredText(font, disp, 290, 22, CLR_GREEN);
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen > 0)
+        if (IsButtonPressed(BTN_X, 370, BTN_W, BTN_H) && s->inputLen > 0)
         {
-            // verify account exists first
             bool exists = false;
             for (int i = 0; i < atm.getCount(); i++)
             {
@@ -1428,12 +1432,12 @@ void DrawAdminResetPin(AppState *s, Font font)
                 s->inputBuf[0] = '\0';
             }
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "NEXT", font, 0);
+        DrawGreenButton(BTN_X, 370, BTN_W, BTN_H, "NEXT", font, 0);
     }
     else
     {
-        DrawCenteredText(font, "ENTER NEW 4-DIGIT PIN:", 140, 18, CLR_WHITE);
-        int bx = SCREEN_W / 2 - 98, by = 220;
+        DrawCenteredText(font, "ENTER NEW 4-DIGIT PIN:", 230, 18, CLR_WHITE);
+        int bx = SCREEN_W / 2 - 98, by = 290;
         for (int i = 0; i < MAX_PIN; i++)
         {
             DrawRectangle(bx + i * 44, by, 36, 50, CLR_CARD);
@@ -1442,41 +1446,38 @@ void DrawAdminResetPin(AppState *s, Font font)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
 
-        if (IsButtonPressed(BTN_X, 330, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
+        if (IsButtonPressed(BTN_X, 370, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
-            // find correct admin and reset pin
             atm.resetUserPin(string(s->adminTemp), string(s->inputBuf));
-
             ShowMessage(s, "PIN RESET SUCCESSFULLY");
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
             s->adminStep = 0;
             s->screen = SCR_ADMIN;
         }
-        DrawGreenButton(BTN_X, 330, BTN_W, BTN_H, "CONFIRM", font, 0);
+        DrawGreenButton(BTN_X, 370, BTN_W, BTN_H, "CONFIRM", font, 0);
     }
 
-    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
+    if (IsButtonPressed(BTN_X, 440, BTN_W, BTN_H))
     {
         s->adminStep = 0;
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(BTN_X, 440, BTN_W, BTN_H, "CANCEL", font, 0);
 }
 
-// Admin unlocks a frozen/locked account
 void DrawAdminUnlock(AppState *s, Font font)
 {
-    DrawCenteredText(font, "UNLOCK FROZEN ACCOUNT", 80, 24, CLR_GREEN);
-    DrawCenteredText(font, "ENTER ACCOUNT ID TO UNLOCK:", 140, 18, CLR_WHITE);
+    DrawCenteredText(font, "UNLOCK FROZEN ACCOUNT", 185, 24, CLR_GREEN);
+    DrawCenteredText(font, "ENTER ACCOUNT ID TO UNLOCK:", 240, 18, CLR_WHITE);
 
     char disp[32];
     snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-    DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
+    DrawCenteredText(font, disp, 300, 22, CLR_GREEN);
 
-    if (IsButtonPressed(CX - 200, 330, 180, BTN_H) && s->inputLen > 0)
+    if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)
     {
         atm.unlockAccount(string(s->inputBuf));
         ShowMessage(s, "ACCOUNT UNLOCKED SUCCESSFULLY");
@@ -1484,17 +1485,17 @@ void DrawAdminUnlock(AppState *s, Font font)
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX - 200, 330, 180, BTN_H, "UNLOCK", font, 0);
+    DrawGreenButton(CX - 200, 390, 180, BTN_H, "UNLOCK", font, 0);
 
-    if (IsButtonPressed(CX + 20, 330, 180, BTN_H))
+    if (IsButtonPressed(CX + 20, 390, 180, BTN_H))
     {
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
     }
-    DrawGreenButton(CX + 20, 330, 180, BTN_H, "CANCEL", font, 0);
+    DrawGreenButton(CX + 20, 390, 180, BTN_H, "CANCEL", font, 0);
 }
-
+// Admin unlocks a frozen/locked account
 // Admin adds a user account (same as signup but from admin side)
 void DrawAdminAddAcc(AppState *s, Font font)
 {

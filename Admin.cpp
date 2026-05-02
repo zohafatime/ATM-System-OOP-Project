@@ -51,9 +51,7 @@ void Admin::addAccount(Account **&accounts, int &count, Account *newAcc)
 
     delete[] accounts;
     accounts = temp;
-
     count++;
-
     cout << "Account added successfully" << endl;
 }
 void Admin::removeAccount(Account **&accounts, int &count, string accNo)

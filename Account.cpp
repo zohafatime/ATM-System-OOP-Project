@@ -121,13 +121,13 @@ void Account::saveToFile()
             }
             if (id != accountNumber)
             {
-                string t_pin;
+                string t_pin,t_name;
                 float t_bal;
                 bool t_lock;
                 int count2;
-                infile >>t_pin>>t_bal >>t_lock>>count2;
+                infile >>t_pin>>t_bal >>t_lock>>t_name>>count2;
 
-                temp_f << id << " " <<t_pin<<" "<<t_bal << " " <<t_lock<<" "<< count2 << " ";
+                temp_f << id << " " <<t_pin<<" "<<t_bal << " " <<t_lock<<" "<<t_name<<" "<< count2 << " ";
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -145,7 +145,7 @@ void Account::saveToFile()
         infile.close();
     }
 
-   temp_f << accountNumber << " " << pin << " " << balance << " " << isLocked << " " << transactionCount << " ";
+   temp_f << accountNumber << " " << pin << " " << balance << " " << isLocked << " " <<holdername<<" "<<transactionCount << " ";
     for (int i = 0; i < transactionCount; i++)
     {
         temp_f << (*(transactions + i))->getAmount() << " ";
@@ -172,7 +172,7 @@ void Account::loadFromFile()
     while (!infile.eof())
     {
         string id;
-        string t_pin;
+        string t_pin,t_name;
         infile >> id;
 
         if (id == "")
@@ -186,6 +186,8 @@ void Account::loadFromFile()
             this->pin=t_pin;
             infile >> balance;
             infile>>isLocked;
+            infile>>t_name;
+            this->holdername=t_name;
             infile >> tempcount;
             status = !(isLocked);
             for (int i = 0; i < tempcount; i++)
