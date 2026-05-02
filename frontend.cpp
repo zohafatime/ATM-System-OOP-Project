@@ -86,7 +86,8 @@ typedef enum
     SCR_ADMIN_VIEW,      // view all accounts list
     SCR_ADMIN_RESET_PIN, // reset user PIN screen
     SCR_ADMIN_UNLOCK,    // unlock frozen account screen
-    SCR_ADMIN_ADD_ACC    // admin adding a user account
+    SCR_ADMIN_ADD_ACC,    // admin adding a user account
+    SCR_EXIT
 } Screen;
 
 // -- Transaction History --
@@ -187,7 +188,7 @@ int main(void)
 
     s.pinAttempts = 3;
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose()&&s.screen != SCR_EXIT)
     {
         s.time += GetFrameTime();
         s.blinkTimer += GetFrameTime();
@@ -298,6 +299,8 @@ int main(void)
         case SCR_USER:
             break;
         case SCR_SIGNUP_ROLE: 
+            break;
+        case SCR_EXIT:       
             break;
         }
 
@@ -429,7 +432,14 @@ void DrawAuth(AppState *s, Font font)
         s->screen = SCR_SIGNUP;
     }
     DrawGreenButton(BTN_X, 310, BTN_W, BTN_H, "SIGN UP", font, 0);
+    if (IsButtonPressed(BTN_X, 380, BTN_W, BTN_H))
+    {
+        s->screen = SCR_EXIT;
+    }
+    DrawGreenButton(BTN_X, 380, BTN_W, BTN_H, "EXIT", font, 0);
+    // --------------------------------
 }
+
 
 // 2. User / Admin Screen
 void DrawRole(AppState *s, Font font)
