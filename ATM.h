@@ -31,6 +31,7 @@ public:
     Account *getAccount(int i) const;
     Account **getAccounts() const;
     Admin *getAdmin(int i) const;
+    int validateAndSetPin(string p1);
     void addAccountToArray(Account *acc);
     void addAdminToArray(Admin *adm);
     void removeAccount(const string &accNo);

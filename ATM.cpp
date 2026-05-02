@@ -381,6 +381,25 @@ bool ATM::authenticate(string accNo, string pin)
     }
     return false;
 }
+int ATM::validateAndSetPin(string p1) {
+    int len = 0;
+    while (p1[len] != '\0') {
+        len++;
+    }
+    
+    if (len != 4)
+    { return 1; 
+    }
+    for(int i=0; i<4; i++) {
+        if (p1[i] < '0' || p1[i] > '9') 
+        {
+            return 2; 
+        }
+    }
+    currentAccount->setPin(p1);
+    currentAccount->saveToFile();
+    return 0;
+}
 void ATM::processTransaction(int choice)
 {
     if (choice == 1)
