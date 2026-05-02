@@ -223,7 +223,7 @@ int main(void)
         char tstr[32];
         int sec = (int)s.time % 60, mn = ((int)s.time / 60) % 60;
         snprintf(tstr, sizeof(tstr), "SESSION %02d:%02d", mn, sec);
-        DrawTextEx(font, tstr, (Vector2){(float)SCREEN_W - 200, 45}, 16, 1, CLR_DIM);
+        DrawTextEx(font, tstr, (Vector2){(float)SCREEN_W - 200, 45}, 16, 1, CLR_WHITE);
 
         switch (s.screen)
         {
@@ -410,8 +410,6 @@ void DrawWelcome(AppState *s, Font font)
     int cx = SCREEN_W / 2 - 60, cy = 215;
     DrawRectangleRounded((Rectangle){(float)cx, (float)cy, 120, 75}, 0.1f, 4, CLR_CARD);
     DrawRectangleLinesEx((Rectangle){(float)cx, (float)cy, 120, 75}, 2, CLR_BORDER);
-    if (s->cursorBlink)
-        DrawCenteredText(font, ">> PLEASE INSERT YOUR CARD <<", 318, 20, CLR_GREEN);
     if (IsKeyPressed(KEY_ENTER) || IsButtonPressed(30, 30, SCREEN_W - 60, SCREEN_H - 60))
         s->screen = SCR_PIN;
 }
@@ -419,7 +417,7 @@ void DrawWelcome(AppState *s, Font font)
 void DrawAuth(AppState *s, Font font)
 {
     DrawCenteredText(font, "WELCOME TO ATM", 210, 32, CLR_GREEN);
-    DrawCenteredText(font, "PLEASE CHOOSE AN OPTION", 268, 18, CLR_DIM);
+    DrawCenteredText(font, "PLEASE CHOOSE AN OPTION", 268, 18, CLR_WHITE);
     if (IsButtonPressed(BTN_X, 340, BTN_W, BTN_H))
        { s->screen = SCR_ROLE;
        }
@@ -449,7 +447,7 @@ void DrawRole(AppState *s, Font font)
 {
 
     DrawCenteredText(font, "SELECT ACCOUNT TYPE", 210, 32, CLR_GREEN);
-    DrawCenteredText(font, "SIGN IN AS:", 268, 18, CLR_DIM);
+    DrawCenteredText(font, "SIGN IN AS:", 268, 18, CLR_WHITE);
     if (IsButtonPressed(BTN_X, 340, BTN_W, BTN_H))
     {
         s->isLoggingInAsAdmin = 0;
@@ -670,7 +668,7 @@ void DrawBalance(AppState *s, Font font)
 }
 void DrawWithdraw(AppState *s, Font font) {
     DrawCenteredText(font, "WITHDRAW CASH", 200, 26, CLR_GREEN);
-    DrawCenteredText(font, "MAX LIMIT: PKR 25000", 230, 18, CLR_AMBER);
+    DrawCenteredText(font, "MAX LIMIT: PKR 25000", 230, 18, CLR_WHITE);
 
     float qamt[] = {500, 1000, 2000, 5000, 10000, 20000};
     int bWidth = 180, bHeight = 44, paddingX = 20;
@@ -687,7 +685,7 @@ void DrawWithdraw(AppState *s, Font font) {
         DrawGreenButton(bx, by, bWidth, bHeight, TextFormat("PKR %d", (int)qamt[i]), font, 0);
     }
 
-    DrawCenteredText(font, "OR ENTER CUSTOM AMOUNT:", 400, 18, CLR_DIM);
+    DrawCenteredText(font, "OR ENTER CUSTOM AMOUNT:", 400, 18, CLR_WHITE);
     char disp[32];
     snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
     DrawCenteredText(font, disp, 440, 24, CLR_GREEN);
@@ -742,7 +740,7 @@ void DrawHistory(AppState *s, Font font)
     // Agar koi transaction nahi hui
     if (s->historyCount == 0)
     {
-        DrawCenteredText(font, "NO TRANSACTIONS YET", startY + 50, 20, CLR_DIM);
+        DrawCenteredText(font, "NO TRANSACTIONS YET", startY + 50, 20, CLR_WHITE);
     }
     else
     {
@@ -865,7 +863,7 @@ void DrawReceipt(AppState *s, Font font)
     snprintf(line2, sizeof(line2), "AMOUNT:  PKR %.2f", s->pendingAmount);
     snprintf(line3, sizeof(line3), "BALANCE: PKR %.2f", s->balance);
 
-    DrawCenteredText(font, line1, 250, 20, CLR_DIM);
+    DrawCenteredText(font, line1, 250, 20, CLR_WHITE);
     DrawCenteredText(font, line2, 290, 20, CLR_GREEN);
     DrawCenteredText(font, line3, 330, 20, CLR_AMBER);
 
@@ -1084,7 +1082,7 @@ void DrawTransfer(AppState *s, Font font) {
     DrawCenteredText(font, "TRANSFER FUNDS", 200, 26, CLR_GREEN);
 
     if (s->transferStep == 0) {
-        DrawCenteredText(font, "ENTER TARGET ACCOUNT NO:", 230, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER TARGET ACCOUNT NO:", 230, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 330, 24, CLR_GREEN);
@@ -1096,7 +1094,7 @@ void DrawTransfer(AppState *s, Font font) {
         }
         DrawGreenButton(CX - 190, 430, 180, 44, "NEXT", font, 0);
     } else {
-        DrawCenteredText(font, "ENTER AMOUNT TO TRANSFER:", 250, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER AMOUNT TO TRANSFER:", 250, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 330, 24, CLR_GREEN);
@@ -1197,7 +1195,7 @@ void DrawAdmin(AppState *s, Font font)
 void DrawAdminRefill(AppState *s, Font font)
 {
     DrawCenteredText(font, "REFILL ATM CASH", 110, 26, CLR_GREEN);
-    DrawCenteredText(font, "ENTER AMOUNT TO REFILL:", 160, 18, CLR_DIM);
+    DrawCenteredText(font, "ENTER AMOUNT TO REFILL:", 160, 18, CLR_WHITE);
 
     char disp[32];
     snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
@@ -1225,7 +1223,7 @@ void DrawAdminRefill(AppState *s, Font font)
 void DrawAdminRmAcc(AppState *s, Font font)
 {
     DrawCenteredText(font, "REMOVE ACCOUNT", 110, 26, CLR_GREEN);
-    DrawCenteredText(font, "ENTER ACCOUNT NO. TO REMOVE:", 160, 18, CLR_DIM);
+    DrawCenteredText(font, "ENTER ACCOUNT NO. TO REMOVE:", 160, 18, CLR_WHITE);
 
     char disp[32];
     snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
@@ -1261,7 +1259,7 @@ void DrawSignup(AppState *s, Font font)
 
     if (s->signupStep == 0)
     {
-        DrawCenteredText(font, "ENTER YOUR FULL NAME:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER YOUR FULL NAME:", 260, 18, CLR_WHITE);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
@@ -1277,7 +1275,7 @@ void DrawSignup(AppState *s, Font font)
     }
     else if (s->signupStep == 1)
     {
-        DrawCenteredText(font, "SET YOUR 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "SET YOUR 4-DIGIT PIN:", 260, 18, CLR_WHITE);
         int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
@@ -1299,7 +1297,7 @@ void DrawSignup(AppState *s, Font font)
     }
     else if (s->signupStep == 2)
     {
-        DrawCenteredText(font, "ENTER INITIAL DEPOSIT (PKR):", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER INITIAL DEPOSIT (PKR):", 260, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
@@ -1342,9 +1340,9 @@ void DrawSignup(AppState *s, Font font)
 void DrawSignupDone(AppState *s, Font font)
 {
     DrawCenteredText(font, "ACCOUNT CREATED!", 210, 28, CLR_GREEN);
-    DrawCenteredText(font, "YOUR ACCOUNT ID IS:", 260, 18, CLR_DIM);
+    DrawCenteredText(font, "YOUR ACCOUNT ID IS:", 260, 18, CLR_WHITE);
     DrawCenteredText(font, s->generatedID, 320, 40, CLR_AMBER);
-    DrawCenteredText(font, "PLEASE SAVE THIS ID TO LOGIN", 380, 16, CLR_DIM);
+    DrawCenteredText(font, "PLEASE SAVE THIS ID TO LOGIN", 380, 16, CLR_WHITE);
 
     // SYNCED: Y = 480
     if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
@@ -1361,7 +1359,7 @@ void DrawAdminViewAccounts(AppState *s, Font font)
     int startY = 130;
     if (atm.getCount() == 0)
     {
-        DrawCenteredText(font, "NO ACCOUNTS FOUND", startY + 30, 18, CLR_DIM);
+        DrawCenteredText(font, "NO ACCOUNTS FOUND", startY + 30, 18, CLR_WHITE);
     }
     else
     {
@@ -1383,7 +1381,7 @@ void DrawAdminViewAccounts(AppState *s, Font font)
         {
             char more[32];
             snprintf(more, sizeof(more), "...and %d more accounts", atm.getCount() - 6);
-            DrawTextEx(font, more, (Vector2){60, (float)(startY + 6 * 30)}, 14, 1, CLR_DIM);
+            DrawTextEx(font, more, (Vector2){60, (float)(startY + 6 * 30)}, 14, 1, CLR_WHITE);
         }
     }
 
@@ -1399,7 +1397,7 @@ void DrawAdminResetPin(AppState *s, Font font)
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER USER ACCOUNT ID:", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER USER ACCOUNT ID:", 140, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 200, 22, CLR_GREEN);
@@ -1434,7 +1432,7 @@ void DrawAdminResetPin(AppState *s, Font font)
     }
     else
     {
-        DrawCenteredText(font, "ENTER NEW 4-DIGIT PIN:", 140, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER NEW 4-DIGIT PIN:", 140, 18, CLR_WHITE);
         int bx = SCREEN_W / 2 - 98, by = 220;
         for (int i = 0; i < MAX_PIN; i++)
         {
@@ -1472,7 +1470,7 @@ void DrawAdminResetPin(AppState *s, Font font)
 void DrawAdminUnlock(AppState *s, Font font)
 {
     DrawCenteredText(font, "UNLOCK FROZEN ACCOUNT", 80, 24, CLR_GREEN);
-    DrawCenteredText(font, "ENTER ACCOUNT ID TO UNLOCK:", 140, 18, CLR_DIM);
+    DrawCenteredText(font, "ENTER ACCOUNT ID TO UNLOCK:", 140, 18, CLR_WHITE);
 
     char disp[32];
     snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
@@ -1504,7 +1502,7 @@ void DrawAdminAddAcc(AppState *s, Font font)
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER HOLDER NAME:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER HOLDER NAME:", 260, 18, CLR_WHITE);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
@@ -1520,7 +1518,7 @@ void DrawAdminAddAcc(AppState *s, Font font)
     }
     else if (s->adminStep == 1)
     {
-        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_WHITE);
         int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
@@ -1542,7 +1540,7 @@ void DrawAdminAddAcc(AppState *s, Font font)
     }
     else
     {
-        DrawCenteredText(font, "INITIAL BALANCE (PKR):", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "INITIAL BALANCE (PKR):", 260, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
@@ -1591,7 +1589,7 @@ void DrawAdminSignup(AppState *s, Font font)
 
     if (s->adminStep == 0)
     {
-        DrawCenteredText(font, "ENTER ADMIN NAME:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "ENTER ADMIN NAME:", 260, 18, CLR_WHITE);
         char disp[64];
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
@@ -1607,7 +1605,7 @@ void DrawAdminSignup(AppState *s, Font font)
     }
     else
     {
-        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_DIM);
+        DrawCenteredText(font, "SET 4-DIGIT PIN:", 260, 18, CLR_WHITE);
         int bx = SCREEN_W / 2 - 98, by = 300;
         for (int i = 0; i < MAX_PIN; i++)
         {
