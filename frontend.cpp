@@ -1,12 +1,13 @@
 #include "ATM.h"
 #include "Admin.h"
 #include "Account.h"
-#define _CRT_SECURE_NO_WARNINGS
 #include "raylib.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#define _CRT_SECURE_NO_WARNINGS // to suppress compiler warnings
+
 ATM atm;
 Sound buttonBeep;
 Sound moneySound;
@@ -20,7 +21,7 @@ Sound moneySound;
     strncpy(dest, src, count);            \
     (dest)[(size) - 1] = '\0'
 #endif
-// --- Constants
+// Constants
 const int SCREEN_W = 1100;
 const int SCREEN_H = 750;
 const int MAX_PIN = 4;
@@ -30,23 +31,18 @@ const int MAX_HISTORY = 20;
 #define BTN_H 50
 #define BTN_X (CX - BTN_W / 2)
 
+static const Color CLR_BG = {5, 5, 10, 255};    // Near Black
+static const Color CLR_PANEL = {15, 15, 20, 0}; // Very Dark Grey
 
-// --- Updated Cyber-Security Color Scheme ---
-
-// --- "True Dark" Terminal Color Scheme ---
-
-static const Color CLR_BG      = { 5, 5, 10, 255 };    // Near Black
-static const Color CLR_PANEL   = { 15, 15, 20, 0 };  // Very Dark Grey
-
-static const Color CLR_GREEN = { 0, 255, 240, 255 }; // Bright Cyan
-static const Color CLR_DIM     = { 70, 80, 90, 0 };  // Muted Slate
-static const Color CLR_DIMMER  = { 10, 10, 15, 0 };  // Darker Header
-static const Color CLR_AMBER   = { 255, 170, 0, 255 }; // Warning Orange
-static const Color CLR_RED     = { 220, 20, 60, 255 }; // Crimson Error
+static const Color CLR_GREEN = {0, 255, 240, 255}; // Bright Cyan
+static const Color CLR_DIM = {70, 80, 90, 0};      // Muted Slate
+static const Color CLR_DIMMER = {10, 10, 15, 0};   // Darker Header
+static const Color CLR_AMBER = {255, 170, 0, 255}; // Warning Orange
+static const Color CLR_RED = {220, 20, 60, 255};   // Crimson Error
 static const Color CLR_SCANLINE = {0, 0, 0, 25};
-static const Color CLR_WHITE   = { 200, 210, 220, 255 };// Silver-Grey Text
-static const Color CLR_BORDER  = { 40, 45, 55, 0 };  // Subtle Dark Border
-static const Color CLR_CARD    = { 20, 25, 30, 255 };  // Darker Button Backgrounds
+static const Color CLR_WHITE = {200, 210, 220, 255}; // Silver-Grey Text
+static const Color CLR_BORDER = {40, 45, 55, 0};     // Subtle Dark Border
+static const Color CLR_CARD = {20, 25, 30, 255};     // Darker Button Backgrounds
 
 typedef enum
 {
@@ -70,16 +66,15 @@ typedef enum
     SCR_CONFIRM,
     SCR_RECEIPT,
     SCR_ERROR,
-    SCR_ADMIN_REFILL,
     SCR_ADMIN_RM_ACC,
     SCR_ADMIN_VIEW,      // view all accounts list
     SCR_ADMIN_RESET_PIN, // reset user PIN screen
     SCR_ADMIN_UNLOCK,    // unlock frozen account screen
-    SCR_ADMIN_ADD_ACC,    // admin adding a user account
+    SCR_ADMIN_ADD_ACC,   // admin adding a user account
     SCR_EXIT
 } Screen;
 
-// -- Transaction History --
+//  Transaction History
 typedef struct
 {
     char desc[32];
@@ -87,7 +82,7 @@ typedef struct
     int isCredit;
 } TxRecord;
 
-// -- App State --
+// App State
 typedef struct
 {
     Screen screen;
@@ -100,8 +95,8 @@ typedef struct
     char inputBuf[16];
     int inputLen;
     int adminPage = 0;
-    TxRecord history[10];     
-    int historyCount;         
+    TxRecord history[10];
+    int historyCount;
     char message[64];
     float msgTimer;
     float time;
@@ -151,7 +146,6 @@ int IsButtonPressed(int x, int y, int w, int h);
 void DrawCenteredText(Font font, const char *text, int y, int size, Color col);
 void DrawStatusBar(AppState *s, Font font);
 void ShowMessage(AppState *s, const char *msg);
-void DrawAdminRefill(AppState *s, Font font);
 void DrawAdminRmAcc(AppState *s, Font font);
 void DrawSignup(AppState *s, Font font);
 void DrawSignupDone(AppState *s, Font font);
@@ -166,24 +160,27 @@ int main(void)
     atm.loadAccounts();
     atm.loadAdmins();
     atm.checkFirstRun();
-    InitWindow(SCREEN_W, SCREEN_H, "ATM ");
+    InitWindow(SCREEN_W, SCREEN_H, "Paisa Express");
     Texture2D bgImage = LoadTexture("Resources/Atm.png");
 
     SetTargetFPS(60);
-    InitAudioDevice(); 
-SetMasterVolume(1.0); 
+    InitAudioDevice();
+    SetMasterVolume(1.0);
     buttonBeep = LoadSound("Resources/beep.mp3");
     moneySound = LoadSound("Resources/money.mp3");
     Font font = LoadFontEx("resources/monospace.ttf", 20, 0, 256);
     if (font.texture.id == 0)
-        font = GetFontDefault();
-
+        font = GetFontDefault(); /*
+     if (FileExists("Resources/beep.mp3"))
+         buttonBeep = LoadSound("Resources/beep.mp3");
+     if (FileExists("Resources/money.mp3"))
+         moneySound = LoadSound("Resources/money.mp3");*/
     AppState s = {};
     s.screen = SCR_AUTH;
 
     s.pinAttempts = 3;
 
-    while (!WindowShouldClose()&&s.screen != SCR_EXIT)
+    while (!WindowShouldClose() && s.screen != SCR_EXIT)
     {
         s.time += GetFrameTime();
         s.blinkTimer += GetFrameTime();
@@ -200,9 +197,9 @@ SetMasterVolume(1.0);
 
         BeginDrawing();
         ClearBackground(CLR_BG);
-        Rectangle sourceRec = { 0.0f, 0.0f, (float)bgImage.width, (float)bgImage.height };
-        Rectangle destRec = { 0.0f, 0.0f, (float)SCREEN_W, (float)SCREEN_H };
-        DrawTexturePro(bgImage, sourceRec, destRec, (Vector2){ 0.0f, 0.0f }, 0.0f, WHITE);
+        Rectangle sourceRec = {0.0f, 0.0f, (float)bgImage.width, (float)bgImage.height};
+        Rectangle destRec = {0.0f, 0.0f, (float)SCREEN_W, (float)SCREEN_H};
+        DrawTexturePro(bgImage, sourceRec, destRec, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
         for (int x = 0; x < SCREEN_W; x += 40)
             DrawLine(x, 0, x, SCREEN_H, (Color){18, 40, 20, 80});
         for (int y = 0; y < SCREEN_H; y += 40)
@@ -212,11 +209,12 @@ SetMasterVolume(1.0);
 
         DrawRectangle(30, 30, SCREEN_W - 60, 50, CLR_DIMMER);
         DrawRectangleLinesEx((Rectangle){30, 30, (float)SCREEN_W - 60, 50}, 1, CLR_BORDER);
-        //DrawTextEx(font, "GreenBank ATM  v2.4.1", (Vector2){50, 45}, 16, 1, CLR_DIM);
-        DrawTextEx(font, "FAST-NUCES Secure Banking Terminal", (Vector2){45, 45}, 16, 1, CLR_DIM);
+        // DrawTextEx(font, "Paisa Express  v2.4.1", (Vector2){50, 45}, 16, 1, CLR_DIM);
+        DrawTextEx(font, "Paisa Express", (Vector2){45, 45}, 16, 1, CLR_DIM);
         char tstr[32];
         int sec = (int)s.time % 60, mn = ((int)s.time / 60) % 60;
         snprintf(tstr, sizeof(tstr), "SESSION %02d:%02d", mn, sec);
+        DrawTextEx(font, tstr, (Vector2){(float)SCREEN_W - 200, 45}, 16, 1, CLR_DIM);
 
         switch (s.screen)
         {
@@ -265,9 +263,6 @@ SetMasterVolume(1.0);
         case SCR_ERROR:
             DrawError(&s, font);
             break;
-        case SCR_ADMIN_REFILL:
-            DrawAdminRefill(&s, font);
-            break;
         case SCR_ADMIN_RM_ACC:
             DrawAdminRmAcc(&s, font);
             break;
@@ -294,9 +289,9 @@ SetMasterVolume(1.0);
             break;
         case SCR_USER:
             break;
-        case SCR_SIGNUP_ROLE: 
+        case SCR_SIGNUP_ROLE:
             break;
-        case SCR_EXIT:       
+        case SCR_EXIT:
             break;
         }
 
@@ -343,11 +338,13 @@ void DrawCenteredText(Font font, const char *text, int y, int size, Color col)
 
 int IsButtonPressed(int x, int y, int w, int h)
 {
-    if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) return 0;
+    if (!IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
+        return 0;
     Vector2 m = GetMousePosition();
     bool isInside = (m.x >= x && m.x <= x + w && m.y >= y && m.y <= y + h);
 
-    if (isInside) PlaySound(buttonBeep); // Use the global variable name
+    if (isInside)
+        PlaySound(buttonBeep); // Use the global variable name
 
     return isInside;
 }
@@ -403,7 +400,7 @@ void DrawStatusBar(AppState *s, Font font)
 
 void DrawWelcome(AppState *s, Font font)
 {
-    DrawCenteredText(font, "BANK", 110, 38, CLR_GREEN);
+    DrawCenteredText(font, "PAISA EXPRESS", 110, 38, CLR_GREEN);
     DrawCenteredText(font, "AUTOMATED TELLER MACHINE", 158, 18, CLR_DIM);
     DrawRectangle(150, 188, SCREEN_W - 300, 2, CLR_BORDER);
     int cx = SCREEN_W / 2 - 60, cy = 215;
@@ -418,8 +415,9 @@ void DrawAuth(AppState *s, Font font)
     DrawCenteredText(font, "WELCOME TO ATM", 210, 32, CLR_GREEN);
     DrawCenteredText(font, "PLEASE CHOOSE AN OPTION", 268, 18, CLR_WHITE);
     if (IsButtonPressed(BTN_X, 340, BTN_W, BTN_H))
-       { s->screen = SCR_ROLE;
-       }
+    {
+        s->screen = SCR_ROLE;
+    }
     DrawGreenButton(BTN_X, 340, BTN_W, BTN_H, "SIGN IN", font, 0);
     if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
     {
@@ -431,7 +429,7 @@ void DrawAuth(AppState *s, Font font)
         s->signupBal[0] = '\0';
         s->screen = SCR_SIGNUP;
     }
-       DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "SIGN UP", font, 0);
+    DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "SIGN UP", font, 0);
     if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         s->screen = SCR_EXIT;
@@ -439,7 +437,6 @@ void DrawAuth(AppState *s, Font font)
     DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "EXIT", font, 0);
     // --------------------------------
 }
-
 
 // 2. User / Admin Screen
 void DrawRole(AppState *s, Font font)
@@ -488,10 +485,21 @@ void DrawPin(AppState *s, Font font)
         // NEXT Button: Yeh ID confirm karke PIN par le jayega
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
         {
-            strcpy_s(s->loginID, sizeof(s->loginID), s->inputBuf);
-            s->inputLen = 0;
-            s->inputBuf[0] = '\0';
-            s->loginStep = 1;
+            if (s->isLoggingInAsAdmin == 0 && !atm.accountExists(string(s->inputBuf)))
+            { // checks if accounts exists or not
+                ShowMessage(s, "ACCOUNT DOES NOT EXIST");
+            }
+            else if (s->isLoggingInAsAdmin == 0 && !atm.isAccountActive(string(s->inputBuf)))
+            {
+                ShowMessage(s, "ACCOUNT LOCKED - CONTACT ADMIN");
+            }
+            else
+            {
+                strcpy_s(s->loginID, sizeof(s->loginID), s->inputBuf);
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+                s->loginStep = 1;
+            }
         }
         DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "NEXT", font, 0);
     }
@@ -597,53 +605,67 @@ void DrawPin(AppState *s, Font font)
     DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
 }
 void DrawMenu(AppState *s, Font font)
-{    
+{
+    char welcome[48];
+    snprintf(welcome, sizeof(welcome), "WELCOME, %s", s->loggedInName);
+    DrawCenteredText(font, welcome, 210, 16, CLR_AMBER);
     DrawCenteredText(font, "--- ACCOUNT MENU ---", 180, 26, CLR_GREEN);
     // --- 1. CLOCK LOGIC (Top Left) ---
     time_t now = time(0);
     struct tm *ltm = localtime(&now);
     char timeStr[16], dateStr[16], ampm[8];
-    strftime(timeStr, sizeof(timeStr), "%I:%M", ltm); 
+    strftime(timeStr, sizeof(timeStr), "%I:%M", ltm);
     strftime(dateStr, sizeof(dateStr), "%Y-%m-%d", ltm);
     strftime(ampm, sizeof(ampm), "%p", ltm);
-DrawTextEx(font, timeStr, (Vector2){450, 240}, 80, 2, CLR_GREEN);
-DrawTextEx(font, ampm, (Vector2){660, 275}, 25, 2, CLR_GREEN);
-DrawTextEx(font, dateStr, (Vector2){450, 310}, 18, 1, CLR_WHITE);
+    DrawTextEx(font, timeStr, (Vector2){450, 240}, 80, 2, CLR_GREEN);
+    DrawTextEx(font, ampm, (Vector2){660, 275}, 25, 2, CLR_GREEN);
+    DrawTextEx(font, dateStr, (Vector2){450, 310}, 18, 1, CLR_WHITE);
     // --- 2. MENU BUTTONS (Perfected Grid) ---
     const char *labels[] = {
         "1. Balance", "2. Withdraw", "3. Deposit",
         "4. Transfer", "5. History", "6. PIN", "0. Logout"};
 
-    int bWidth = 180;  
-    int bHeight = 40;  
-    int paddingX = 20; 
-    int paddingY = 15; 
-    int startX = 290;  
-    int startY = 390;  // Lifted from 450 to 390 to fix the "too low" issue
+    int bWidth = 180;
+    int bHeight = 40;
+    int paddingX = 20;
+    int paddingY = 15;
+    int startX = 290;
+    int startY = 390; // Lifted from 450 to 390 to fix the "too low" issue
 
     for (int i = 0; i < 7; i++)
     {
-        int row = i / 3; 
+        int row = i / 3;
         int col = i % 3;
 
         int currentX = startX + (col * (bWidth + paddingX));
         int currentY = startY + (row * (bHeight + paddingY));
 
-        if (i == 6) {
-            currentX = startX + (bWidth + paddingX); 
+        if (i == 6)
+        {
+            currentX = startX + (bWidth + paddingX);
         }
 
         if (IsButtonPressed(currentX, currentY, bWidth, bHeight))
         {
             s->inputLen = 0;
             s->inputBuf[0] = '\0';
-            if (i == 0) s->screen = SCR_BALANCE;
-            else if (i == 1) s->screen = SCR_WITHDRAW;
-            else if (i == 2) s->screen = SCR_DEPOSIT;
-            else if (i == 3) { s->screen = SCR_TRANSFER; s->transferStep = 0; }
-            else if (i == 4) s->screen = SCR_HISTORY;
-            else if (i == 5) s->screen = SCR_CHANGEPIN;
-            else if (i == 6) s->screen = SCR_AUTH; 
+            if (i == 0)
+                s->screen = SCR_BALANCE;
+            else if (i == 1)
+                s->screen = SCR_WITHDRAW;
+            else if (i == 2)
+                s->screen = SCR_DEPOSIT;
+            else if (i == 3)
+            {
+                s->screen = SCR_TRANSFER;
+                s->transferStep = 0;
+            }
+            else if (i == 4)
+                s->screen = SCR_HISTORY;
+            else if (i == 5)
+                s->screen = SCR_CHANGEPIN;
+            else if (i == 6)
+                s->screen = SCR_AUTH;
         }
         DrawGreenButton(currentX, currentY, bWidth, bHeight, labels[i], font, 0);
     }
@@ -665,18 +687,35 @@ void DrawBalance(AppState *s, Font font)
     }
     DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK TO MENU", font, 0);
 }
-void DrawWithdraw(AppState *s, Font font) {
+// helper func---------------------------------------------------------------
+bool isValidAmount(const char *buf, int &outAmt)
+{
+    if (buf[0] == '\0')
+        return false;
+    for (int i = 0; buf[i] != '\0'; i++)
+        if (buf[i] < '0' || buf[i] > '9')
+            return false;
+    long long val = atoll(buf); // int to long long
+    if (val <= 0 || val > 500000)
+        return false;
+    outAmt = (int)val;
+    return true;
+} //-----------------------------------------------------------------
+void DrawWithdraw(AppState *s, Font font)
+{
     DrawCenteredText(font, "WITHDRAW CASH", 200, 26, CLR_GREEN);
     DrawCenteredText(font, "MAX LIMIT: PKR 25000", 230, 18, CLR_WHITE);
 
     float qamt[] = {500, 1000, 2000, 5000, 10000, 20000};
     int bWidth = 180, bHeight = 44, paddingX = 20;
-    int startX = CX - 290; 
+    int startX = CX - 290;
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++)
+    {
         int bx = startX + (i % 3) * (bWidth + paddingX);
         int by = 280 + (i / 3) * 60;
-        if (IsButtonPressed(bx, by, bWidth, bHeight)) {
+        if (IsButtonPressed(bx, by, bWidth, bHeight))
+        {
             s->pendingAmount = qamt[i];
             strcpy_s(s->confirmAction, sizeof(s->confirmAction), "WITHDRAW");
             s->screen = SCR_CONFIRM;
@@ -689,36 +728,49 @@ void DrawWithdraw(AppState *s, Font font) {
     snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
     DrawCenteredText(font, disp, 440, 24, CLR_GREEN);
 
-    if (IsButtonPressed(CX - 190, 500, 180, 44) && s->inputLen > 0) {
-        float amt = (float)atof(s->inputBuf);
-        if (amt > 25000.0f) {
-            ShowMessage(s, "LIMIT EXCEEDED!");
-        } else {
-            s->pendingAmount = amt;
+    if (IsButtonPressed(CX - 190, 500, 180, 44) && s->inputLen > 0)
+    {
+        int amt = 0;
+        if (!isValidAmount(s->inputBuf, amt))
+            ShowMessage(s, "INVALID AMOUNT (1 - 500000 ONLY)");
+        else if (amt > 25000)
+            ShowMessage(s, "MAX WITHDRAW IS 25000");
+        else
+        {
+            s->pendingAmount = (float)amt;
+            s->inputLen = 0;
+            s->inputBuf[0] = '\0';
             strcpy_s(s->confirmAction, sizeof(s->confirmAction), "WITHDRAW");
             s->screen = SCR_CONFIRM;
         }
     }
     DrawGreenButton(CX - 190, 500, 180, 44, "CONFIRM", font, 0);
 
-    if (IsButtonPressed(CX + 10, 500, 180, 44)) s->screen = SCR_MENU;
+    if (IsButtonPressed(CX + 10, 500, 180, 44))
+        s->screen = SCR_MENU;
     DrawGreenButton(CX + 10, 500, 180, 44, "CANCEL", font, 0);
 }
 void DrawDeposit(AppState *s, Font font)
 {
     DrawCenteredText(font, "DEPOSIT FUNDS", 210, 26, CLR_GREEN);
-    
+
     char disp[32];
     snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
     DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
     if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
     {
-        s->pendingAmount = (float)atof(s->inputBuf);
-        s->inputLen = 0;
-        s->inputBuf[0] = '\0';
-        strcpy(s->confirmAction, "DEPOSIT");
-        s->screen = SCR_CONFIRM;
+        int amt = 0;
+        if (!isValidAmount(s->inputBuf, amt))
+            ShowMessage(s, "INVALID AMOUNT (1 - 500000 ONLY)");
+        else
+        {
+            s->pendingAmount = (float)amt;
+            s->inputLen = 0;
+            s->inputBuf[0] = '\0';
+            strcpy(s->confirmAction, "DEPOSIT");
+            s->screen = SCR_CONFIRM;
+        }
     }
     DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CONFIRM", font, 0);
 
@@ -733,9 +785,9 @@ void DrawDeposit(AppState *s, Font font)
 void DrawHistory(AppState *s, Font font)
 {
     DrawCenteredText(font, "--- MINI STATEMENT ---", 190, 26, CLR_GREEN);
-    
+
     int startY = 230; // Adjusted to sit better within the blue UI frame
-    
+
     // Agar koi transaction nahi hui
     if (s->historyCount == 0)
     {
@@ -764,12 +816,12 @@ void DrawHistory(AppState *s, Font font)
 
     // Bottom Action Button - Aligned with Withdraw and Transfer screens
     int btnY = 430;
-    if (IsButtonPressed(CX - 90, btnY, 180, 44)) {
+    if (IsButtonPressed(CX - 90, btnY, 180, 44))
+    {
         s->screen = SCR_MENU;
     }
     DrawGreenButton(CX - 90, btnY, 180, 44, "BACK TO MENU", font, 0);
 }
-
 
 void DrawConfirm(AppState *s, Font font)
 {
@@ -780,7 +832,8 @@ void DrawConfirm(AppState *s, Font font)
         {
             bool ok = atm.currentAccount->withdraw((double)s->pendingAmount);
             if (ok)
-            {  PlaySound(moneySound);
+            {
+                PlaySound(moneySound);
                 s->balance = (float)atm.currentAccount->getBalance();
                 AddHistory(s, "ATM Withdrawal", s->pendingAmount, 0);
                 s->screen = SCR_RECEIPT;
@@ -793,11 +846,16 @@ void DrawConfirm(AppState *s, Font font)
         }
         else if (strcmp(s->confirmAction, "DEPOSIT") == 0)
         {
-            atm.currentAccount->deposit((double)s->pendingAmount);
-            PlaySound(moneySound);
-            s->balance = (float)atm.currentAccount->getBalance();
-            AddHistory(s, "Cash Deposit", s->pendingAmount, 1);
-            s->screen = SCR_RECEIPT;
+            bool ok = atm.currentAccount->deposit((double)s->pendingAmount);
+            if (ok)
+            {
+                PlaySound(moneySound);
+                s->balance = (float)atm.currentAccount->getBalance();
+                AddHistory(s, "Cash Deposit", s->pendingAmount, 1);
+                s->screen = SCR_RECEIPT;
+            }
+            else
+                ShowMessage(s, "DEPOSIT FAILED - LIMIT IS 500000");
         }
         // TRANSFER KI NAYI LOGIC:
         else if (strcmp(s->confirmAction, "TRANSFER") == 0)
@@ -828,7 +886,7 @@ void DrawConfirm(AppState *s, Font font)
                     bool ok = atm.currentAccount->transfer(dest, (double)s->pendingAmount);
                     if (ok)
                     {
-                       PlaySound(moneySound);
+                        PlaySound(moneySound);
                         s->balance = (float)atm.currentAccount->getBalance();
                         char desc[32];
                         snprintf(desc, sizeof(desc), "Trf to %s", s->targetAccount);
@@ -887,6 +945,7 @@ void HandleInput(AppState *s)
     if (s->screen == SCR_PIN)
     {
         // ID Type karne ki logic
+
         if (s->loginStep == 0)
         {
             for (int k = KEY_ZERO; k <= KEY_NINE; k++)
@@ -897,6 +956,21 @@ void HandleInput(AppState *s)
                     s->inputBuf[s->inputLen] = '\0';
                 }
             }
+            // KEY_ENTER shortcut to advance
+            if (IsKeyPressed(KEY_ENTER) && s->inputLen > 0)
+            {
+                if (s->isLoggingInAsAdmin == 0 && !atm.accountExists(string(s->inputBuf)))
+                    ShowMessage(s, "ACCOUNT DOES NOT EXIST");
+                else if (s->isLoggingInAsAdmin == 0 && !atm.isAccountActive(string(s->inputBuf))) 
+                    ShowMessage(s, "ACCOUNT LOCKED - CONTACT ADMIN");                             
+                else
+                {
+                    strcpy_s(s->loginID, sizeof(s->loginID), s->inputBuf);
+                    s->inputLen = 0;
+                    s->inputBuf[0] = '\0';
+                    s->loginStep = 1;
+                }
+            }
         }
         // PIN Type karne ki logic
         else if (s->loginStep == 1)
@@ -904,7 +978,8 @@ void HandleInput(AppState *s)
             for (int k = KEY_ZERO; k <= KEY_NINE; k++)
             {
                 if (IsKeyPressed(k) && s->inputLen < MAX_PIN)
-                {  PlaySound(buttonBeep);
+                {
+                    PlaySound(buttonBeep);
                     s->inputBuf[s->inputLen++] = '0' + (k - KEY_ZERO);
                     s->inputBuf[s->inputLen] = '\0';
                     s->pinLen = s->inputLen;
@@ -912,34 +987,57 @@ void HandleInput(AppState *s)
             }
             if (IsKeyPressed(KEY_ENTER) && s->inputLen == MAX_PIN)
             {
-                if (s->isLoggingInAsAdmin == 0)
+
+                // First find the account and check if locked
+                if (!(s->isLoggingInAsAdmin))
                 {
-                    bool success = atm.authenticate(s->loginID, s->inputBuf);
-                    if (success)
+                    bool accountLocked = false;
+                    for (int i = 0; i < atm.getCount(); i++)
                     {
-                        s->balance = (float)atm.currentAccount->getBalance();
-                        strcpy_s(s->loggedInName, sizeof(s->loggedInName), atm.currentAccount->getHolderName().c_str());
-                        s->historyCount = 0; // clear GUI history, reload below
-                        s->pinAttempts = 3;
+                        if (atm.getAccount(i)->getAccountNumber() == string(s->loginID))
+                        {
+                            if (!atm.getAccount(i)->getIsActive())
+                                accountLocked = true;
+                            break;
+                        }
+                    }
+                    if (accountLocked)
+                    {
+                        ShowMessage(s, "ACCOUNT IS LOCKED");
                         s->inputLen = 0;
                         s->pinLen = 0;
-                        s->screen = SCR_MENU;
+                        s->screen = SCR_ERROR;
+                        strcpy_s(s->message, sizeof(s->message), "ACCOUNT LOCKED - SEE ADMIN");
                     }
                     else
                     {
-                        s->pinAttempts--;
-                        s->inputLen = 0;
-                        s->pinLen = 0;
-                        if (s->pinAttempts <= 0)
+                        bool success = atm.authenticate(s->loginID, s->inputBuf);
+                        if (success)
                         {
-                            strcpy_s(s->message, sizeof(s->message), "CARD BLOCKED");
-                            s->screen = SCR_ERROR;
+                            s->balance = (float)atm.currentAccount->getBalance();
+                            strcpy_s(s->loggedInName, sizeof(s->loggedInName), atm.currentAccount->getHolderName().c_str());
+                            s->historyCount = 0; // clear GUI history, reload below
+                            s->pinAttempts = 3;
+                            s->inputLen = 0;
+                            s->pinLen = 0;
+                            s->screen = SCR_MENU;
                         }
                         else
-                            ShowMessage(s, "INCORRECT PIN");
+                        {
+                            s->pinAttempts--;
+                            s->inputLen = 0;
+                            s->pinLen = 0;
+                            if (s->pinAttempts <= 0)
+                            {
+                                strcpy_s(s->message, sizeof(s->message), "CARD BLOCKED");
+                                s->screen = SCR_ERROR;
+                            }
+                            else
+                                ShowMessage(s, "INCORRECT PIN");
+                        }
                     }
                 }
-                else // admin login
+                else if (s->isLoggingInAsAdmin) // admin login
                 {
                     // find admin manually since ATM doesn't expose admin auth directly
                     bool found = false;
@@ -1005,7 +1103,7 @@ void HandleInput(AppState *s)
             s->pinLen = s->inputLen;
     }
     // 4. TRANSFER ACCOUNT AUR AMOUNT ENTER KARNA
-    if (s->screen == SCR_TRANSFER || s->screen == SCR_ADMIN_REFILL ||
+    if (s->screen == SCR_TRANSFER ||
         s->screen == SCR_ADMIN_RM_ACC || s->screen == SCR_ADMIN_UNLOCK ||
         s->screen == SCR_ADMIN_RESET_PIN)
     {
@@ -1072,10 +1170,13 @@ void HandleInput(AppState *s)
         }
         else
         {
-            // PIN and balance steps use number input
+            int limit = ((s->screen == SCR_ADMIN_ADD_ACC && s->adminStep == 1) ||
+                         (s->screen == SCR_ADMIN_SIGNUP && s->adminStep == 1))
+                            ? MAX_PIN
+                            : 10;
             for (int k = KEY_ZERO; k <= KEY_NINE; k++)
             {
-                if (IsKeyPressed(k) && s->inputLen < 10)
+                if (IsKeyPressed(k) && s->inputLen < limit)
                 {
                     s->inputBuf[s->inputLen++] = '0' + (k - KEY_ZERO);
                     s->inputBuf[s->inputLen] = '\0';
@@ -1085,43 +1186,74 @@ void HandleInput(AppState *s)
     }
 }
 // transfer and change screen k function
-void DrawTransfer(AppState *s, Font font) {
+void DrawTransfer(AppState *s, Font font)
+{
     DrawCenteredText(font, "TRANSFER FUNDS", 200, 26, CLR_GREEN);
 
-    if (s->transferStep == 0) {
+    if (s->transferStep == 0)
+    {
         DrawCenteredText(font, "ENTER TARGET ACCOUNT NO:", 230, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "%s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 330, 24, CLR_GREEN);
 
-        if (IsButtonPressed(CX - 190, 430, 180, 44) && s->inputLen > 0) {
-            strcpy_s(s->targetAccount, sizeof(s->targetAccount), s->inputBuf);
-            s->inputLen = 0; s->inputBuf[0] = '\0';
-            s->transferStep = 1;
+        if (IsButtonPressed(CX - 190, 430, 180, 44) && s->inputLen > 0)
+        {
+            // check target account exists before moving to amount step
+            if (string(s->inputBuf) == string(atm.currentAccount->getAccountNumber()))
+            {
+                ShowMessage(s, "CANNOT TRANSFER TO SELF");
+            }
+            else if (!atm.accountExists(string(s->inputBuf)))
+            {
+                ShowMessage(s, "TARGET ACCOUNT NOT FOUND");
+            }
+            else
+            {
+                strcpy_s(s->targetAccount, sizeof(s->targetAccount), s->inputBuf);
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+                s->transferStep = 1;
+            }
         }
         DrawGreenButton(CX - 190, 430, 180, 44, "NEXT", font, 0);
-    } else {
+    }
+    else
+    {
         DrawCenteredText(font, "ENTER AMOUNT TO TRANSFER:", 250, 18, CLR_WHITE);
         char disp[32];
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 330, 24, CLR_GREEN);
 
-        if (IsButtonPressed(CX - 190, 430, 180, 44) && s->inputLen > 0) {
-            s->pendingAmount = (float)atof(s->inputBuf);
-            strcpy_s(s->confirmAction, sizeof(s->confirmAction), "TRANSFER");
-            s->screen = SCR_CONFIRM;
+        if (IsButtonPressed(CX - 190, 430, 180, 44) && s->inputLen > 0)
+        {
+            int amt = 0;
+            if (!isValidAmount(s->inputBuf, amt))
+                ShowMessage(s, "INVALID AMOUNT (1 - 500000)");
+            else if (amt > (int)s->balance)
+                ShowMessage(s, "INSUFFICIENT FUNDS");
+            else
+            {
+                s->pendingAmount = (float)amt;
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+                s->transferStep = 0;
+                strcpy_s(s->confirmAction, sizeof(s->confirmAction), "TRANSFER");
+                s->screen = SCR_CONFIRM;
+            }
         }
         DrawGreenButton(CX - 190, 430, 180, 44, "CONFIRM", font, 0);
     }
 
-    if (IsButtonPressed(CX + 10, 430, 180, 44)) s->screen = SCR_MENU;
+    if (IsButtonPressed(CX + 10, 430, 180, 44))
+        s->screen = SCR_MENU;
     DrawGreenButton(CX + 10, 430, 180, 44, (s->transferStep == 1 ? "BACK" : "CANCEL"), font, 0);
 }
 
 void DrawChangePin(AppState *s, Font font)
 {
     DrawCenteredText(font, "ENTER NEW 4-DIGIT PIN", 210, 26, CLR_GREEN);
-    
+
     int bx = SCREEN_W / 2 - 98, by = 300; // Aligned boxes
     for (int i = 0; i < MAX_PIN; i++)
     {
@@ -1130,19 +1262,24 @@ void DrawChangePin(AppState *s, Font font)
         if (i < s->inputLen)
             DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
     }
-        
-    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H)) {
+
+    if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H))
+    {
         int status = atm.validateAndSetPin(s->inputBuf);
-        if (status == 0) {
+        if (status == 0)
+        {
             ShowMessage(s, "PIN CHANGED SUCCESSFULLY");
             s->screen = SCR_MENU;
-        } else {
+        }
+        else
+        {
             ShowMessage(s, "INVALID PIN FORMAT");
         }
     }
     DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CONFIRM", font, 0);
 
-    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H)) {
+    if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
+    {
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_MENU;
@@ -1151,7 +1288,6 @@ void DrawChangePin(AppState *s, Font font)
 }
 // BEFORE: only refill and remove worked, rest said COMING SOON
 // AFTER: all options functional, uses loggedInAdminID to find correct admin
-
 
 void DrawAdmin(AppState *s, Font font)
 {
@@ -1170,14 +1306,13 @@ void DrawAdmin(AppState *s, Font font)
         "4. Reset User PIN",
         "5. Unlock Frozen Account",
         "6. Add New Admin",
-        "7. Refill ATM Cash",
         "0. Logout"};
 
     int btnH = 32;
     int gap = 3;
     int my = 232;
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 7; i++)
     {
         if (IsButtonPressed(CX - 300, my, 600, btnH))
         {
@@ -1186,56 +1321,28 @@ void DrawAdmin(AppState *s, Font font)
             s->adminStep = 0;
 
             if (i == 0)
-    { s->screen = SCR_ADMIN_VIEW; s->adminPage = 0; }
-else if (i == 1)
-    s->screen = SCR_ADMIN_ADD_ACC;
-else if (i == 2)
-    s->screen = SCR_ADMIN_RM_ACC;
-else if (i == 3)
-    s->screen = SCR_ADMIN_RESET_PIN;
-else if (i == 4)
-    s->screen = SCR_ADMIN_UNLOCK;
-else if (i == 5)
-    s->screen = SCR_ADMIN_SIGNUP;
-else if (i == 6)
-    s->screen = SCR_ADMIN_REFILL;
-else if (i == 7)
-    s->screen = SCR_AUTH;
+            {
+                s->screen = SCR_ADMIN_VIEW;
+                s->adminPage = 0;
+            }
+            else if (i == 1)
+                s->screen = SCR_ADMIN_ADD_ACC;
+            else if (i == 2)
+                s->screen = SCR_ADMIN_RM_ACC;
+            else if (i == 3)
+                s->screen = SCR_ADMIN_RESET_PIN;
+            else if (i == 4)
+                s->screen = SCR_ADMIN_UNLOCK;
+            else if (i == 5)
+                s->screen = SCR_ADMIN_SIGNUP;
+            else if (i == 6)
+                s->screen = SCR_AUTH;
         }
         DrawGreenButton(CX - 300, my, 600, btnH, labels[i], font, 0);
-        my += btnH + gap; 
+        my += btnH + gap;
     }
 }
 // --- ADMIN SCREENS ---
-void DrawAdminRefill(AppState *s, Font font)
-{
-    DrawCenteredText(font, "REFILL ATM CASH", 200, 26, CLR_GREEN);      
-    DrawCenteredText(font, "ENTER AMOUNT TO REFILL:", 250, 18, CLR_WHITE); 
-
-    char disp[32];
-    snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
-    DrawCenteredText(font, disp, 310, 24, CLR_GREEN);                    
-
-    if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)  
-    {
-        atm.refillCash((double)atof(s->inputBuf));
-        PlaySound(moneySound);
-        ShowMessage(s, "ATM CASH REFILLED SUCCESSFULLY");
-        s->inputLen = 0;
-        s->inputBuf[0] = '\0';
-        s->screen = SCR_ADMIN;
-    }
-    DrawGreenButton(CX - 200, 390, 180, BTN_H, "REFILL", font, 0);     
-
-    if (IsButtonPressed(CX + 20, 390, 180, BTN_H))                       
-    {
-        s->inputLen = 0;
-        s->inputBuf[0] = '\0';
-        s->screen = SCR_ADMIN;
-    }
-    DrawGreenButton(CX + 20, 390, 180, BTN_H, "CANCEL", font, 0);       
-}
-
 void DrawAdminRmAcc(AppState *s, Font font)
 {
     DrawCenteredText(font, "REMOVE ACCOUNT", 200, 26, CLR_GREEN);
@@ -1247,8 +1354,13 @@ void DrawAdminRmAcc(AppState *s, Font font)
 
     if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)
     {
-        atm.removeAccount(string(s->inputBuf));
-        ShowMessage(s, "ACCOUNT REMOVED");
+        if (!atm.accountExists(string(s->inputBuf)))
+            ShowMessage(s, "ACCOUNT NOT FOUND");
+        else
+        {
+            atm.removeAccount(string(s->inputBuf));
+            ShowMessage(s, "ACCOUNT REMOVED");
+        }
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
@@ -1264,7 +1376,6 @@ void DrawAdminRmAcc(AppState *s, Font font)
     DrawGreenButton(CX + 20, 390, 180, BTN_H, "CANCEL", font, 0);
 }
 
-
 // User signup — 3 steps: name, pin, initial balance
 // Auto generates ID, shows it at the end
 void DrawSignup(AppState *s, Font font)
@@ -1278,7 +1389,6 @@ void DrawSignup(AppState *s, Font font)
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        // SYNCED: Y is 410 for both!
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->signupName[0] != '\0')
         {
             s->inputLen = 0;
@@ -1298,8 +1408,7 @@ void DrawSignup(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        
-        // SYNCED: Y is 410 for both!
+
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
             strcpy_s(s->signupPin, sizeof(s->signupPin), s->inputBuf);
@@ -1316,27 +1425,33 @@ void DrawSignup(AppState *s, Font font)
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        // SYNCED: Y is 410 for both!
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
         {
             string newID = atm.generateUserID();
             strcpy_s(s->generatedID, sizeof(s->generatedID), newID.c_str());
 
-            double bal = atof(s->inputBuf);
-            Account *newAcc = new Account(newID, string(s->signupName), bal);
-            newAcc->setPin(string(s->signupPin));
-            newAcc->saveToFile();
+            int amt = 0;
+            if (!isValidAmount(s->inputBuf, amt))
+            {
+                ShowMessage(s, "INVALID AMOUNT (1 - 500000)");
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+            }
+            else
+            {
+                Account *newAcc = new Account(newID, string(s->signupName), amt);
+                newAcc->setPin(string(s->signupPin));
+                newAcc->saveToFile();
+                atm.addAccountToArray(newAcc);
 
-            atm.addAccountToArray(newAcc); 
-
-            s->inputLen = 0;
-            s->inputBuf[0] = '\0';
-            s->screen = SCR_SIGNUP_DONE;
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+                s->screen = SCR_SIGNUP_DONE;
+            }
         }
         DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CREATE ACCOUNT", font, 0);
     }
 
-    // SYNCED: Back Button Y is 480 for both!
     if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         if (s->signupStep > 0)
@@ -1372,11 +1487,13 @@ void DrawAdminViewAccounts(AppState *s, Font font)
 
     int pageSize = 6;
     int totalPages = (atm.getCount() + pageSize - 1) / pageSize;
-    if (totalPages == 0) totalPages = 1;
+    if (totalPages == 0)
+        totalPages = 1;
 
     int startIndex = s->adminPage * pageSize;
     int endIndex = startIndex + pageSize;
-    if (endIndex > atm.getCount()) endIndex = atm.getCount();
+    if (endIndex > atm.getCount())
+        endIndex = atm.getCount();
 
     int startY = 240;
 
@@ -1389,7 +1506,7 @@ void DrawAdminViewAccounts(AppState *s, Font font)
         for (int i = startIndex; i < endIndex; i++)
         {
             char line[64];
-            snprintf(line, sizeof(line), "ID:%s  %s  PKR:%.0f  %s",
+            snprintf(line, sizeof(line), "ID:%s  %s  PKR:%.d  %s",
                      atm.getAccount(i)->getAccountNumber().c_str(),
                      atm.getAccount(i)->getHolderName().c_str(),
                      atm.getAccount(i)->getBalance(),
@@ -1508,8 +1625,15 @@ void DrawAdminUnlock(AppState *s, Font font)
 
     if (IsButtonPressed(CX - 200, 390, 180, BTN_H) && s->inputLen > 0)
     {
-        atm.unlockAccount(string(s->inputBuf));
-        ShowMessage(s, "ACCOUNT UNLOCKED SUCCESSFULLY");
+        if (!atm.accountExists(string(s->inputBuf)))
+            ShowMessage(s, "ACCOUNT NOT FOUND");
+        else if (atm.isAccountActive(string(s->inputBuf)))
+            ShowMessage(s, "ACCOUNT IS ALREADY ACTIVE");
+        else
+        {
+            atm.unlockAccount(string(s->inputBuf));
+            ShowMessage(s, "ACCOUNT UNLOCKED SUCCESSFULLY");
+        }
         s->inputLen = 0;
         s->inputBuf[0] = '\0';
         s->screen = SCR_ADMIN;
@@ -1537,7 +1661,6 @@ void DrawAdminAddAcc(AppState *s, Font font)
         snprintf(disp, sizeof(disp), "%s%s", s->signupName, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        // SYNCED: Y = 410
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->signupName[0] != '\0')
         {
             s->inputLen = 0;
@@ -1557,8 +1680,7 @@ void DrawAdminAddAcc(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        
-        // SYNCED: Y = 410
+
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
             strcpy_s(s->signupPin, sizeof(s->signupPin), s->inputBuf);
@@ -1575,33 +1697,38 @@ void DrawAdminAddAcc(AppState *s, Font font)
         snprintf(disp, sizeof(disp), "PKR %s%s", s->inputBuf, s->cursorBlink ? "_" : " ");
         DrawCenteredText(font, disp, 310, 24, CLR_GREEN);
 
-        // SYNCED: Y = 410
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen > 0)
         {
             string newID = atm.generateUserID();
             strcpy_s(s->generatedID, sizeof(s->generatedID), newID.c_str());
 
-            double bal = atof(s->inputBuf);
-            Account *newAcc = new Account(newID, string(s->signupName), bal);
-            newAcc->setPin(string(s->signupPin));
-            newAcc->saveToFile();
+            int amt = 0;
+            if (!isValidAmount(s->inputBuf, amt))
+            {
+                ShowMessage(s, "INVALID AMOUNT (1 - 500000)");
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+            }
+            else
+            {
+                Account *newAcc = new Account(newID, string(s->signupName), (double)amt);
+                newAcc->setPin(string(s->signupPin));
+                newAcc->saveToFile();
+                atm.addAccountToArray(newAcc);
+                char msg[32];
+                snprintf(msg, sizeof(msg), "CREATED! ID: %s", newID.c_str());
+                ShowMessage(s, msg);
 
-            atm.addAccountToArray(newAcc); 
-
-            char msg[32];
-            snprintf(msg, sizeof(msg), "CREATED! ID: %s", newID.c_str());
-            ShowMessage(s, msg);
-
-            s->inputLen = 0;
-            s->inputBuf[0] = '\0';
-            s->signupName[0] = '\0';
-            s->adminStep = 0;
-            s->screen = SCR_ADMIN;
+                s->inputLen = 0;
+                s->inputBuf[0] = '\0';
+                s->signupName[0] = '\0';
+                s->adminStep = 0;
+                s->screen = SCR_ADMIN;
+            }
         }
         DrawGreenButton(BTN_X, 410, BTN_W, BTN_H, "CREATE", font, 0);
     }
 
-    // SYNCED: Y = 480
     if (IsButtonPressed(BTN_X, 480, BTN_W, BTN_H))
     {
         s->adminStep = 0;
@@ -1644,7 +1771,7 @@ void DrawAdminSignup(AppState *s, Font font)
             if (i < s->inputLen)
                 DrawCircle(bx + i * 44 + 18, by + 25, 10, CLR_GREEN);
         }
-        
+
         // SYNCED: Y = 410
         if (IsButtonPressed(BTN_X, 410, BTN_W, BTN_H) && s->inputLen == MAX_PIN)
         {
@@ -1682,4 +1809,3 @@ void DrawAdminSignup(AppState *s, Font font)
     }
     DrawGreenButton(BTN_X, 480, BTN_W, BTN_H, "BACK", font, 0);
 }
-

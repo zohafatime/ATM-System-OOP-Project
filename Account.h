@@ -11,33 +11,35 @@ class Account
 private:
     string accountNumber;
     string holdername;
-    double balance;
+    int balance;
     int failedAttempts;
     bool isLocked;
     Transaction **transactions;
     User *user;
     int transactionCount;
-    bool status;
     string pin;
 
 public:
-    Account(string accNo, string holderName, double initialBalance);
+    Account(string accNo, string holderName, int initialBalance);
     ~Account();
-    void deposit(double amount);
-    bool withdraw(double amount);
-    bool transfer(Account *target, double amount);
-    double getBalance();
-    string getAccountNumber();
-    string getHolderName();
-    bool getIsActive();
-    void setIsActive(bool status);
+    bool deposit(int amount);
+    bool withdraw(int amount);
+    bool transfer(Account *target, int amount);
+    void lockAccount();
+    void unlockAccount();
+    void resetLock();
     void printMiniStatement();
     void addTransaction(Transaction *t);
     void saveToFile();
-    void setPin(string newPin);
     void loadFromFile();
     void showBalance();
-    bool verifyPin(string input); 
-    void resetLock(); 
+    bool verifyPin(string input);
+    void setPin(string newPin);
+
+    // getter
+    int getBalance();
+    string getAccountNumber();
+    string getHolderName();
+    bool getIsActive();
 };
 #endif

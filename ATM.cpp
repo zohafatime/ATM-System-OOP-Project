@@ -7,7 +7,6 @@ ATM::ATM()
     currentAccount = nullptr;
     accounts = nullptr;
     count = 0;
-    cashAvailable = 0;
     admins = nullptr;
     adminCount = 0;
 }
@@ -116,7 +115,7 @@ void ATM::runUserMenu()
         else if (choice == 2)
         {
             string accNo, holderName, newPin, Pin2;
-            double initial;
+            int initial;
 
             cout << "NEW ACCOUNT REGISTRATION" << endl
                  << "Enter Account Number " << endl;
@@ -261,15 +260,14 @@ void ATM::runAdminMenu()
             break;
         else if (choice == 1)
         {
-            double amt;
+            int amt;
             cout << "Enter amount to refill: ";
             cin >> amt;
-            currentAdmin->refillATMCash(*this, amt);
         }
         else if (choice == 2)
         {
             string accNo, name, pin2;
-            double bal;
+            int bal;
             cout << "Enter Account Number: ";
             cin >> accNo;
             cout << "Enter Holder Name: ";
@@ -381,19 +379,23 @@ bool ATM::authenticate(string accNo, string pin)
     }
     return false;
 }
-int ATM::validateAndSetPin(string p1) {
+int ATM::validateAndSetPin(string p1)
+{
     int len = 0;
-    while (p1[len] != '\0') {
+    while (p1[len] != '\0')
+    {
         len++;
     }
-    
+
     if (len != 4)
-    { return 1; 
+    {
+        return 1;
     }
-    for(int i=0; i<4; i++) {
-        if (p1[i] < '0' || p1[i] > '9') 
+    for (int i = 0; i < 4; i++)
+    {
+        if (p1[i] < '0' || p1[i] > '9')
         {
-            return 2; 
+            return 2;
         }
     }
     currentAccount->setPin(p1);
@@ -408,7 +410,7 @@ void ATM::processTransaction(int choice)
     }
     else if (choice == 2)
     {
-        double amount;
+        int amount;
         cout << "Enter amount to deposit " << endl;
         cin >> amount;
 
@@ -418,7 +420,7 @@ void ATM::processTransaction(int choice)
     }
     else if (choice == 3)
     {
-        double amount;
+        int amount;
         cout << "Enter amount to withdraw " << endl;
         cin >> amount;
 
@@ -451,7 +453,7 @@ void ATM::processTransaction(int choice)
         }
         else
         {
-            double amount;
+            int amount;
             cout << "Enter amount to transfer " << endl;
             cin >> amount;
             currentAccount->transfer(destination, amount);
@@ -561,7 +563,7 @@ void ATM::loadAccounts()
             *(temp + i) = *(accounts + i);
         }
 
-        Account *new_acc = new Account(id, "User", 0.0);
+        Account *new_acc = new Account(id, "User", 0);
         *(temp + count) = new_acc;
 
         delete[] accounts;
@@ -572,25 +574,11 @@ void ATM::loadAccounts()
 
         char ch;
         while (infile.get(ch) && ch != '\n')
+        {
             ;
+        }
     }
     infile.close();
-}
-void ATM::refillCash(double amount)
-{
-    if (amount < 0)
-    {
-        cout << "Invalid amount" << endl;
-        return;
-    }
-    else
-    {
-        cashAvailable = cashAvailable + amount;
-    }
-}
-double ATM::getCashAvailable()
-{
-    return cashAvailable;
 }
 void ATM::showMenu()
 {
@@ -687,34 +675,44 @@ void ATM::loadAdmins()
 // finds highest numeric ID, returns next one as 4-digit string
 string ATM::generateUserID()
 {
-    int maxID = -1;
+    int maxID = 0;
     for (int i = 0; i < count; i++)
     {
-        int id = stoi(accounts[i]->getAccountNumber());
-        if (id > maxID)
-            maxID = id;
+        try // for stoi
+        {
+            int id = stoi(accounts[i]->getAccountNumber());
+            if (id > maxID)
+                maxID = id;
+        }
+        catch (...)
+        {
+        }
+    }
+    string newIDStr = to_string(maxID);
+    for (int i = 0; i < count; i++)
+    {
+        if (accounts[i]->getAccountNumber() == newIDStr) // check for same ID generarion
+        {
+            return generateUserID();
+        }
     }
     int newID = maxID + 1;
     char buf[16];
     snprintf(buf, sizeof(buf), "%04d", newID);
     return string(buf);
 }
-
 string ATM::generateAdminID()
 {
-    int maxID = -1;
+    int maxID = 0;
     for (int i = 0; i < adminCount; i++)
     {
-        int id = stoi(admins[i]->getAccountNumber()); // stoi converts str into int
-        if (id > maxID)
-            maxID = id;
+        try { int id = stoi(admins[i]->getAccountNumber()); if (id > maxID) maxID = id; }
+        catch (...) {}
     }
-    int newID = maxID + 1;
     char buf[16];
-    snprintf(buf, sizeof(buf), "%04d", newID);
+    snprintf(buf, sizeof(buf), "%04d", maxID + 1);
     return string(buf);
 }
-
 // Sets isLocked=false, status=true, resets failedAttempts, saves to file
 void ATM::unlockAccount(string accNo)
 {
@@ -722,8 +720,7 @@ void ATM::unlockAccount(string accNo)
     {
         if (accounts[i]->getAccountNumber() == accNo)
         {
-            accounts[i]->setIsActive(true);
-            accounts[i]->saveToFile();
+            accounts[i]->resetLock();
             cout << "Account unlocked" << endl;
             return;
         }
@@ -773,18 +770,49 @@ void ATM::addAdminToArray(Admin *adm)
     adminCount++;
 }
 
-void ATM::removeAccount(const string& accNo)
+void ATM::removeAccount(const string &accNo)
 {
-    // find the logged-in admin — any admin can do this, so just use admins[0]
-    // or pass adminID if needed; here we call Admin's method directly with our private array
-    for (int i = 0; i < adminCount; i++)
+    int index = -1;
+    for (int i = 0; i < count; i++)
     {
-        admins[i]->removeAccount(accounts, count, accNo);
-        return;
+        if (accounts[i]->getAccountNumber() == accNo)
+        {
+            index = i;
+            break;
+        }
     }
+    if (index == -1)
+        return;
+
+    // delete from file first
+    ifstream infile("account_record.txt");
+    ofstream temp_f("temp.txt");
+    if (infile.is_open())
+    {
+        string line;
+        while (getline(infile, line))
+        {
+            // skip lines starting with this account number
+            if (line.length() >= accNo.length() &&
+                line.substr(0, accNo.length()) == accNo &&
+                (line.length() == accNo.length() || line[accNo.length()] == ' '))
+                continue;
+            temp_f << line << "\n";
+        }
+        infile.close();
+    }
+    temp_f.close();
+    remove("account_record.txt");
+    rename("temp.txt", "account_record.txt");
+
+    // delete from memory
+    delete accounts[index];
+    for (int i = index; i < count - 1; i++)
+        accounts[i] = accounts[i + 1];
+    count--;
 }
 
-void ATM::resetUserPin(const string& accNo, const string& newPin)
+void ATM::resetUserPin(const string &accNo, const string &newPin)
 {
     for (int i = 0; i < count; i++)
     {
@@ -795,4 +823,23 @@ void ATM::resetUserPin(const string& accNo, const string& newPin)
             return;
         }
     }
+}
+bool ATM::accountExists(const string &accNo) const
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (accounts[i]->getAccountNumber() == accNo)
+            return true;
+    }
+    return false;
+}
+
+bool ATM::isAccountActive(const string &accNo) const
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (accounts[i]->getAccountNumber() == accNo)
+            return accounts[i]->getIsActive();
+    }
+    return false;
 }

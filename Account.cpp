@@ -3,32 +3,54 @@
 #include <iostream>
 #include <fstream>
 
-Account::Account(string accNo, string holderName, double initialBalance)
+// helper
+string encryptPin(const string &pin)
+{
+    string result = pin;
+    for (char &c : result)
+        c = c ^ 0x5A; // XOR key 0x5A
+    return result;
+}
+string decryptPin(const string &pin)
+{
+    return encryptPin(pin); // XOR is symmetric
+}
+
+Account::Account(string accNo, string holderName, int initialBalance)
 {
     accountNumber = accNo;
     this->holdername = holderName;
     balance = initialBalance;
     transactionCount = 0;
-    failedAttempts = 0; 
-    isLocked = false;   
-    status = true;     
+    failedAttempts = 0;
+    isLocked = false;
     transactions = nullptr;
 }
 Account::~Account()
 {
     delete[] transactions;
 }
-void Account::deposit(double amount)
+bool Account::deposit(int amount)
 {
-    if (amount > 0)
+    if (amount <= 0)
+        return false;
+    if (balance + amount > 500000)
     {
-        balance = balance + amount;
-        addTransaction(new LogEntry("Deposit", amount));
-        saveToFile();
+        cout << "Error: Deposit would exceed 5lac limit" << endl;
+        return false;
     }
+    balance = balance + amount;
+    addTransaction(new LogEntry("Deposit", amount));
+    saveToFile();
+    return true;
 }
-bool Account::withdraw(double amount)
+bool Account::withdraw(int amount)
 {
+    if (amount <= 0 || amount > balance)
+    {
+        cout << "Invalid amount" << endl;
+        return false;
+    }
     if (amount <= balance)
     {
         balance = balance - amount;
@@ -38,18 +60,20 @@ bool Account::withdraw(double amount)
     }
     return false;
 }
-bool Account::transfer(Account *target, double amount)
+bool Account::transfer(Account *target, int amount)
 {
     if (amount <= 0 || amount > balance)
     {
         cout << "Invalid amount cant work on it" << endl;
         return false;
     }
-    else if (accountNumber == target->accountNumber)
+    if (accountNumber == target->accountNumber)
     {
         cout << "Invalid number cant transfer" << endl;
         return false;
     }
+    if (target->balance + amount > 500000)
+        return false;
     balance = balance - amount;
     target->balance = target->balance + amount;
     addTransaction(new LogEntry("Deducted", -amount));
@@ -59,7 +83,7 @@ bool Account::transfer(Account *target, double amount)
     cout << "Transaction Successful and money Transferred" << endl;
     return true;
 }
-double Account::getBalance()
+int Account::getBalance()
 {
     return balance;
 }
@@ -71,15 +95,24 @@ string Account::getHolderName()
 {
     return holdername;
 }
+//--
 bool Account::getIsActive()
 {
-    return status;
+    return !isLocked;
 }
-
-void Account::setIsActive(bool status)
+void Account::lockAccount()
 {
-    this->status = status;
+    isLocked = true;
+    failedAttempts = 0;
+    saveToFile();
 }
+void Account::unlockAccount()
+{
+    isLocked = false;
+    failedAttempts = 0;
+    saveToFile();
+}
+//--
 void Account::printMiniStatement()
 {
     for (int i = 0; i < transactionCount; i++)
@@ -121,13 +154,13 @@ void Account::saveToFile()
             }
             if (id != accountNumber)
             {
-                string t_pin,t_name;
-                float t_bal;
+                string t_pin, t_name;
+                int t_bal;
                 bool t_lock;
                 int count2;
-                infile >>t_pin>>t_bal >>t_lock>>t_name>>count2;
+                infile >> t_pin >> t_bal >> t_lock >> t_name >> count2;
 
-                temp_f << id << " " <<t_pin<<" "<<t_bal << " " <<t_lock<<" "<<t_name<<" "<< count2 << " ";
+                temp_f << id << " " << t_pin << " " << t_bal << " " << t_lock << " " << t_name << " " << count2 << " ";
                 for (int i = 0; i < count2; i++)
                 {
                     float trashAmt;
@@ -137,15 +170,16 @@ void Account::saveToFile()
                 temp_f << endl;
             }
             else
-            {   
-                 char ch;
-                 while (infile.get(ch) && ch != '\n');
+            {
+                char ch;
+                while (infile.get(ch) && ch != '\n')
+                    ;
             }
         }
         infile.close();
     }
 
-   temp_f << accountNumber << " " << pin << " " << balance << " " << isLocked << " " <<holdername<<" "<<transactionCount << " ";
+    temp_f << accountNumber << " " << encryptPin(pin) << " " << balance << " " << isLocked << " " << holdername << " " << transactionCount << " ";
     for (int i = 0; i < transactionCount; i++)
     {
         temp_f << (*(transactions + i))->getAmount() << " ";
@@ -172,7 +206,7 @@ void Account::loadFromFile()
     while (!infile.eof())
     {
         string id;
-        string t_pin,t_name;
+        string t_pin, t_name;
         infile >> id;
 
         if (id == "")
@@ -182,25 +216,27 @@ void Account::loadFromFile()
         if (id == accountNumber)
         {
             int tempcount;
-            infile>>t_pin;
-            this->pin=t_pin;
+            infile >> t_pin;
+            this->pin = decryptPin(t_pin);
             infile >> balance;
-            infile>>isLocked;
-            infile>>t_name;
-            this->holdername=t_name;
+            infile >> isLocked;
+            infile >> t_name;
+            this->holdername = t_name;
             infile >> tempcount;
-            status = !(isLocked);
+
             for (int i = 0; i < tempcount; i++)
             {
-                float amt;
+                int amt;
                 infile >> amt;
                 addTransaction(new LogEntry("History", amt));
             }
             break;
         }
         else
-        {   char ch;
-            while (infile.get(ch) && ch != '\n');
+        {
+            char ch;
+            while (infile.get(ch) && ch != '\n')
+                ;
         }
     }
     infile.close();
@@ -215,6 +251,13 @@ void Account::setPin(string newPin)
 }
 bool Account::verifyPin(string input)
 {
+    if (input.length() != 4)
+        return false;
+    for (char c : input) // range based for loop
+    {
+        if (c < '0' || c > '9')
+            return false;
+    }
     if (isLocked)
     {
         cout << "Access denied as account is currently locked" << endl;
@@ -232,19 +275,17 @@ bool Account::verifyPin(string input)
 
         if (failedAttempts >= 3)
         {
-            isLocked = true; 
-            status = false;  
+            isLocked = true;
             cout << "Account has been locked due to 3 failed attempts" << endl;
-            saveToFile();   
+            saveToFile();
         }
         return false;
     }
 }
 
-void Account::resetLock()//admin uses this to unlock
+void Account::resetLock() // admin uses this to unlock
 {
     isLocked = false;
     failedAttempts = 0;
-    status = true;
     saveToFile();
 }
